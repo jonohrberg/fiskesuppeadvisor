@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jons Fiskesuppeadvisor</title>
+
+<!-- Supabase JS-bibliotek (gjør at vi kan snakke med databasen vår) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  /* ---------- Generelt utseende ---------- */
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #0f2942 0%, #1e4d7b 100%);
+    color: #f4f8fb;
+    margin: 0;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  @media (max-width: 600px) {
+    body { padding: 12px; }
+    section { padding: 16px; }
+    header h1 { font-size: 1.5rem; }
+    main { gap: 16px; }
+  }
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+  }
+  header h1 { margin: 0 0 8px; font-size: 2rem; }
+  header p { margin: 0; opacity: 0.85; font-style: italic; }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    gap: 24px;
+  }
+  section {
+    background: rgba(255, 255, 255, 0.07);
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  h2 { margin-top: 0; }
+
+  /* ---------- Admin-bar i toppen ---------- */
+  .admin-bar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #admin-status { opacity: 0.7; font-size: 0.8rem; }
+  .admin-link {
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .admin-link:hover { color: white; border-color: rgba(255,255,255,0.5); }
+
+  /* ---------- Skjema ---------- */
+  .meta-fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 600px) {
+    .meta-fields { grid-template-columns: 1fr; }
+  }
+  .reviewer-field {
+    margin-bottom: 24px;
+  }
+  label { display: block; }
+  .label-text {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  input[type="text"], input[type="date"], input[type="email"], input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    font-size: 1rem;
+  }
+  input::placeholder { color: rgba(255,255,255,0.5); }
+
+  /* ---------- Kriterierader ---------- */
+  .criteria {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .criterion {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+  }
+  @media (max-width: 600px) {
+    .criterion { grid-template-columns: 1fr; gap: 10px; }
+    .rating-buttons { width: 100%; justify-content: space-between; }
+    .rating-buttons .scale-end { display: none; }
+    .rating-buttons button { flex: 1; height: 48px; font-size: 1.05rem; }
+  }
+  .criterion-name { font-weight: 500; }
+
+  .scale-info {
+    text-align: center;
+    padding: 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+    opacity: 0.95;
+  }
+
+  .rating-buttons { display: flex; gap: 4px; align-items: center; }
+  .rating-buttons .scale-end {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .rating-buttons button {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    transition: all 0.15s;
+  }
+  .rating-buttons button:hover { background: rgba(255, 255, 255, 0.2); }
+  .rating-buttons button.selected[data-value="1"] { background: #ef4444; border-color: #ef4444; color: white; }
+  .rating-buttons button.selected[data-value="2"] { background: #f87171; border-color: #f87171; color: white; }
+  .rating-buttons button.selected[data-value="3"] { background: #fbbf24; border-color: #fbbf24; color: #0f2942; }
+  .rating-buttons button.selected[data-value="4"] { background: #a3e635; border-color: #a3e635; color: #0f2942; }
+  .rating-buttons button.selected[data-value="5"] { background: #4ade80; border-color: #4ade80; color: #0f2942; }
+  .rating-buttons button.selected[data-value="6"] { background: #22c55e; border-color: #22c55e; color: white; }
+
+  /* ---------- Live score ---------- */
+  .live-score {
+    text-align: center;
+    font-size: 1.2rem;
+    margin: 24px 0;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+  }
+  .score-value {
+    font-weight: bold;
+    color: #4ade80;
+    font-size: 2rem;
+    display: inline-block;
+    margin-left: 8px;
+  }
+
+  /* ---------- Knapper ---------- */
+  button[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    background: #4ade80;
+    color: #0f2942;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button[type="submit"]:hover { background: #3bc56f; }
+  button[type="submit"]:disabled { opacity: 0.5; cursor: wait; }
+
+  /* ---------- Anmeldelseskort ---------- */
+  .review-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .review-card .restaurant { font-size: 1.15rem; font-weight: bold; margin-bottom: 4px; }
+  .review-card .meta { opacity: 0.8; font-size: 0.9rem; margin-bottom: 8px; }
+  .review-card .reviewer { font-size: 0.8rem; opacity: 0.6; font-style: italic; margin-bottom: 8px; }
+  .review-card .score { font-size: 1.8rem; font-weight: bold; color: #4ade80; text-align: right; }
+  .review-card .score-label {
+    font-size: 0.75rem; opacity: 0.7; text-align: right; color: white;
+    font-weight: normal; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .delete-btn {
+    background: transparent; color: #ff9999;
+    border: 1px solid #ff9999;
+    padding: 4px 12px; border-radius: 6px;
+    cursor: pointer; font-size: 0.8rem;
+  }
+  .delete-btn:hover { background: rgba(255, 153, 153, 0.15); }
+  .empty { opacity: 0.7; text-align: center; font-style: italic; padding: 32px; }
+  .loading { text-align: center; padding: 32px; opacity: 0.7; }
+
+  .review-card.has-image { grid-template-columns: 90px 1fr auto; }
+  .review-thumb {
+    width: 90px; height: 90px; border-radius: 10px;
+    object-fit: cover; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  @media (max-width: 600px) {
+    .review-card, .review-card.has-image {
+      grid-template-columns: 70px 1fr auto;
+      padding: 12px; gap: 12px;
+    }
+    .review-thumb { width: 70px; height: 70px; }
+    .review-card .restaurant { font-size: 1rem; }
+    .review-card .meta { font-size: 0.8rem; }
+    .review-card .score { font-size: 1.5rem; }
+  }
+
+  /* ---------- Bilde-opplasting ---------- */
+  .image-upload { margin-bottom: 20px; }
+  .image-upload-label {
+    display: block; padding: 16px;
+    border: 2px dashed rgba(255,255,255,0.3);
+    border-radius: 10px; text-align: center;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .image-upload-label:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.5);
+  }
+  .image-upload input[type="file"] { display: none; }
+  .image-preview { margin-top: 12px; text-align: center; }
+  .image-preview img {
+    max-width: 100%; max-height: 240px;
+    border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+  }
+  .image-preview .remove-image {
+    display: inline-block; margin-top: 8px;
+    background: transparent; color: #ff9999;
+    border: 1px solid #ff9999;
+    padding: 4px 10px; border-radius: 6px;
+    cursor: pointer; font-size: 0.85rem;
+  }
+
+  /* ---------- Lightbox og modal ---------- */
+  .lightbox, .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    z-index: 999;
+    align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .lightbox { background: rgba(0,0,0,0.85); cursor: pointer; }
+  .lightbox.open, .modal-backdrop.open { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 100%; border-radius: 12px; }
+
+  .modal-backdrop { background: rgba(0,0,0,0.7); }
+  .modal {
+    background: #0f2942;
+    padding: 24px; border-radius: 12px;
+    max-width: 400px; width: 100%;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .modal h3 { margin-top: 0; }
+  .modal input { margin-bottom: 12px; }
+  .modal-buttons { display: flex; gap: 8px; }
+  .modal-buttons button {
+    flex: 1; padding: 10px;
+    border-radius: 8px; border: none;
+    cursor: pointer; font-weight: bold;
+  }
+  .modal-buttons .primary { background: #4ade80; color: #0f2942; }
+  .modal-buttons .secondary { background: rgba(255,255,255,0.1); color: white; }
+  .modal .error {
+    color: #ff9999; font-size: 0.85rem;
+    margin-bottom: 12px; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="admin-bar">
+    <span id="admin-status"></span>
+    <button class="admin-link" id="admin-toggle">Admin</button>
+  </div>
+  <h1>🐟 Jons Fiskesuppeadvisor 👴✌️</h1>
+  <p>Alt iht. den bibelske skalaen: "thou shalt NOT"</p>
+</header>
+
+<main>
+
+  <!-- ===== Skjema for ny anmeldelse ===== -->
+  <section>
+    <h2>Ny anmeldelse</h2>
+    <form id="review-form">
+
+      <div class="meta-fields">
+        <label>
+          <span class="label-text">Restaurant</span>
+          <input type="text" name="restaurant" placeholder="F.eks. Fiskeriet" required>
+        </label>
+        <label>
+          <span class="label-text">Sted</span>
+          <input type="text" name="city" placeholder="F.eks. Oslo" required>
+        </label>
+        <label>
+          <span class="label-text">Dato</span>
+          <input type="date" name="date" required>
+        </label>
+      </div>
+
+      <div class="reviewer-field">
+        <label>
+          <span class="label-text">Ditt navn</span>
+          <input type="text" name="reviewer_name" placeholder="F.eks. Jon" required>
+        </label>
+      </div>
+
+      <!-- Bilde-opplasting -->
+      <div class="image-upload">
+        <label class="image-upload-label" for="image-input">
+          📷 Klikk her for å legge til bilde av suppa (valgfritt)
+        </label>
+        <input type="file" id="image-input" accept="image/*">
+        <div class="image-preview" id="image-preview"></div>
+      </div>
+
+      <div class="scale-info">
+        Gi karakter 1–6 på hvert bud · <strong>1 = elendig</strong>, <strong>6 = perfekt</strong>
+      </div>
+
+      <div class="criteria" id="criteria"></div>
+
+      <div class="live-score">
+        Terningkast: <span class="score-value" id="live-score">–</span>
+      </div>
+
+      <button type="submit" id="submit-btn">Lagre anmeldelse</button>
+    </form>
+  </section>
+
+  <!-- ===== Liste over alle anmeldelser ===== -->
+  <section>
+    <h2>Alle anmeldelser</h2>
+    <div id="review-list">
+      <p class="loading">Laster anmeldelser…</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- Stor bilde-visning -->
+<div class="lightbox" id="lightbox"><img id="lightbox-img" alt=""></div>
+
+<!-- Innloggings-modal -->
+<div class="modal-backdrop" id="login-modal">
+  <div class="modal">
+    <h3>Logg inn som admin</h3>
+    <div class="error" id="login-error" style="display:none;"></div>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Passord">
+    <div class="modal-buttons">
+      <button class="secondary" id="login-cancel">Avbryt</button>
+      <button class="primary" id="login-submit">Logg inn</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // KONFIG – kobling til Supabase
+  // ============================================================
+  const SUPABASE_URL = 'https://qazvbvcjjfyihpnydmsf.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_1-Fj9IZiKXrWHGqjxaT_Dg_FV1DifAA';
+  const ADMIN_USER_ID = '8e3e937d-d1d7-48fa-9d41-2751150c18de';
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ============================================================
+  // DE 10 BUD
+  // ============================================================
+  const KRITERIER = [
+    "Passe tykk konsistens (ikke for tynn)",
+    "Passe saltet (ikke for salt)",
+    "Pent kuttede grønnsaker",
+    "Variasjon i fiskeslag (minst to typer)",
+    "Servert skikkelig varm",
+    "Ferskt brød og ordentlig smør ved siden av",
+    "Passe stor porsjon (ikke for liten)",
+    "Fri for fiskebein",
+    "Saftige fiskebiter (ikke overkokt eller tørre)",
+    "Passe store fiskebiter (én munnfull av gangen)"
+  ];
+
+  let currentRatings = {};
+  let currentImageBlob = null;
+  let currentImageUrl = null; // for forhåndsvisning
+  let isAdmin = false;
+
+  // ============================================================
+  // BYGG KRITERIE-RADENE
+  // ============================================================
+  const criteriaEl = document.getElementById('criteria');
+  KRITERIER.forEach((name, idx) => {
+    const row = document.createElement('div');
+    row.className = 'criterion';
+    row.innerHTML = `
+      <div class="criterion-name">${idx + 1}. ${name}</div>
+      <div class="rating-buttons" data-idx="${idx}">
+        <span class="scale-end">Dårlig</span>
+        ${[1,2,3,4,5,6].map(n => `<button type="button" data-value="${n}">${n}</button>`).join('')}
+        <span class="scale-end">Perfekt</span>
+      </div>
+    `;
+    criteriaEl.appendChild(row);
+  });
+
+  document.querySelectorAll('.rating-buttons').forEach(group => {
+    group.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'BUTTON') return;
+      const idx = group.dataset.idx;
+      currentRatings[idx] = parseInt(e.target.dataset.value);
+      group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+      e.target.classList.add('selected');
+      updateLiveScore();
+    });
+  });
+
+  function updateLiveScore() {
+    const values = Object.values(currentRatings);
+    const el = document.getElementById('live-score');
+    if (values.length === 0) { el.textContent = '–'; return; }
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    el.textContent = avg.toFixed(1).replace('.', ',');
+  }
+
+  // ============================================================
+  // BILDE-OPPLASTING (lokal forhåndsvisning + nedskaling)
+  // ============================================================
+  const imageInput = document.getElementById('image-input');
+  const imagePreview = document.getElementById('image-preview');
+
+  imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      resizeImage(ev.target.result, 1000, (blob, previewUrl) => {
+        currentImageBlob = blob;
+        currentImageUrl = previewUrl;
+        imagePreview.innerHTML = `
+          <img src="${previewUrl}" alt="Forhåndsvisning">
+          <br><button type="button" class="remove-image" id="remove-image">Fjern bilde</button>
+        `;
+        document.getElementById('remove-image').addEventListener('click', clearImage);
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function clearImage() {
+    currentImageBlob = null;
+    currentImageUrl = null;
+    imageInput.value = '';
+    imagePreview.innerHTML = '';
+  }
+
+  // Skaler bildet ned, gi tilbake både en Blob (for opplasting) og en URL (for visning)
+  function resizeImage(dataUrl, maxSize, callback) {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxSize) {
+        height = height * (maxSize / width);
+        width = maxSize;
+      } else if (height > maxSize) {
+        width = width * (maxSize / height);
+        height = maxSize;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        callback(blob, URL.createObjectURL(blob));
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = dataUrl;
+  }
+
+  // Lightbox
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
+  function openLightbox(src) {
+    lightboxImg.src = src;
+    lightbox.classList.add('open');
+  }
+  lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
+  window.openLightbox = openLightbox;
+
+  // ============================================================
+  // SUPABASE: HENT, LAGRE, SLETT
+  // ============================================================
+  async function loadReviews() {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('average', { ascending: false });
+    if (error) { console.error(error); return []; }
+    return data || [];
+  }
+
+  async function renderReviews() {
+    const reviews = await loadReviews();
+    const listEl = document.getElementById('review-list');
+
+    if (reviews.length === 0) {
+      listEl.innerHTML = '<p class="empty">Ingen suppeanmeldelser enda. Fyll ut skjemaet over!</p>';
+      return;
+    }
+
+    listEl.innerHTML = reviews.map(r => `
+      <div class="review-card ${r.image_url ? 'has-image' : ''}">
+        ${r.image_url ? `<img class="review-thumb" src="${r.image_url}" alt="" onclick="openLightbox('${r.image_url}')">` : ''}
+        <div>
+          <div class="restaurant">${escapeHtml(r.restaurant)}</div>
+          <div class="meta">${escapeHtml(r.city)} • ${formatDate(r.date)}</div>
+          ${r.reviewer_name ? `<div class="reviewer">Anmeldt av ${escapeHtml(r.reviewer_name)}</div>` : ''}
+          ${isAdmin ? `<button class="delete-btn" onclick="deleteReview('${r.id}')">Slett</button>` : ''}
+        </div>
+        <div>
+          <div class="score">${Number(r.average).toFixed(1).replace('.', ',')}</div>
+          <div class="score-label">Terningkast</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s || '';
+    return div.innerHTML;
+  }
+  function formatDate(d) {
+    return new Date(d).toLocaleDateString('no-NO', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+  }
+
+  async function deleteReview(id) {
+    if (!confirm('Sikker på at du vil slette denne anmeldelsen?')) return;
+    const { error } = await supabase.from('reviews').delete().eq('id', id);
+    if (error) { alert('Klarte ikke å slette: ' + error.message); return; }
+    renderReviews();
+  }
+  window.deleteReview = deleteReview;
+
+  // ============================================================
+  // LAGRE NY ANMELDELSE
+  // ============================================================
+  document.getElementById('review-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (Object.keys(currentRatings).length < KRITERIER.length) {
+      alert('Du må gi karakter på alle 10 bud før du kan lagre!');
+      return;
+    }
+
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Lagrer…';
+
+    try {
+      // Last opp bilde først hvis det finnes
+      let imageUrl = null;
+      if (currentImageBlob) {
+        submitBtn.textContent = 'Laster opp bilde…';
+        const filename = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+        const { error: uploadErr } = await supabase.storage
+          .from('soup-images')
+          .upload(filename, currentImageBlob, { contentType: 'image/jpeg' });
+        if (uploadErr) throw uploadErr;
+        const { data } = supabase.storage.from('soup-images').getPublicUrl(filename);
+        imageUrl = data.publicUrl;
+      }
+
+      submitBtn.textContent = 'Lagrer anmeldelse…';
+      const formData = new FormData(e.target);
+      const values = Object.values(currentRatings);
+      const average = values.reduce((a, b) => a + b, 0) / values.length;
+
+      const { error } = await supabase.from('reviews').insert([{
+        restaurant: formData.get('restaurant'),
+        city: formData.get('city'),
+        date: formData.get('date'),
+        reviewer_name: formData.get('reviewer_name'),
+        ratings: currentRatings,
+        average: average,
+        image_url: imageUrl
+      }]);
+      if (error) throw error;
+
+      // Nullstill skjemaet
+      e.target.reset();
+      currentRatings = {};
+      clearImage();
+      document.querySelectorAll('.rating-buttons button.selected')
+        .forEach(b => b.classList.remove('selected'));
+      updateLiveScore();
+      await renderReviews();
+
+      alert(`Lagret! ${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+    } catch (err) {
+      alert('Noe gikk galt: ' + err.message);
+      console.error(err);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Lagre anmeldelse';
+    }
+  });
+
+  // ============================================================
+  // ADMIN-INNLOGGING
+  // ============================================================
+  const adminToggle = document.getElementById('admin-toggle');
+  const adminStatus = document.getElementById('admin-status');
+  const loginModal = document.getElementById('login-modal');
+  const loginEmail = document.getElementById('login-email');
+  const loginPassword = document.getElementById('login-password');
+  const loginError = document.getElementById('login-error');
+
+  async function checkAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    isAdmin = !!(session && session.user && session.user.id === ADMIN_USER_ID);
+    updateAdminUI();
+  }
+
+  function updateAdminUI() {
+    if (isAdmin) {
+      adminStatus.textContent = 'Innlogget';
+      adminToggle.textContent = 'Logg ut';
+    } else {
+      adminStatus.textContent = '';
+      adminToggle.textContent = 'Admin';
+    }
+  }
+
+  adminToggle.addEventListener('click', async () => {
+    if (isAdmin) {
+      await supabase.auth.signOut();
+      isAdmin = false;
+      updateAdminUI();
+      renderReviews();
+    } else {
+      loginError.style.display = 'none';
+      loginEmail.value = '';
+      loginPassword.value = '';
+      loginModal.classList.add('open');
+      loginEmail.focus();
+    }
+  });
+
+  document.getElementById('login-cancel').addEventListener('click', () => {
+    loginModal.classList.remove('open');
+  });
+
+  document.getElementById('login-submit').addEventListener('click', async () => {
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+    if (!email || !password) {
+      loginError.textContent = 'Fyll ut email og passord';
+      loginError.style.display = 'block';
+      return;
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      loginError.textContent = 'Feil email eller passord';
+      loginError.style.display = 'block';
+      return;
+    }
+    if (data.user.id !== ADMIN_USER_ID) {
+      await supabase.auth.signOut();
+      loginError.textContent = 'Du har ikke admin-tilgang';
+      loginError.style.display = 'block';
+      return;
+    }
+    isAdmin = true;
+    loginModal.classList.remove('open');
+    updateAdminUI();
+    renderReviews();
+  });
+
+  // ============================================================
+  // OPPSTART
+  // ============================================================
+  (async () => {
+    await checkAuth();
+    await renderReviews();
+  })();
+</script>
+
+</body>
+</html>
