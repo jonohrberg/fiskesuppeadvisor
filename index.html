@@ -396,7 +396,18 @@
   const SUPABASE_KEY = 'sb_publishable_1-Fj9IZiKXrWHGqjxaT_Dg_FV1DifAA';
   const ADMIN_USER_ID = '8e3e937d-d1d7-48fa-9d41-2751150c18de';
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Forsøk å koble til Supabase, men la resten av sida fungere selv om det feiler
+  let supabase = null;
+  try {
+    if (!window.supabase) throw new Error('Supabase-biblioteket lastet ikke fra CDN');
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch (err) {
+    console.error('Supabase-tilkobling feilet:', err);
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#ef4444;color:white;padding:12px;text-align:center;font-size:0.9rem;';
+    banner.textContent = '⚠️ Server-tilkobling feilet: ' + err.message;
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
 
   // ============================================================
   // DE 10 BUD
@@ -524,6 +535,7 @@
   // SUPABASE: HENT, LAGRE, SLETT
   // ============================================================
   async function loadReviews() {
+    if (!supabase) return [];
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
@@ -533,8 +545,12 @@
   }
 
   async function renderReviews() {
-    const reviews = await loadReviews();
     const listEl = document.getElementById('review-list');
+    if (!supabase) {
+      listEl.innerHTML = '<p class="empty">Kunne ikke laste anmeldelser – serveren er ikke tilgjengelig.</p>';
+      return;
+    }
+    const reviews = await loadReviews();
 
     if (reviews.length === 0) {
       listEl.innerHTML = '<p class="empty">Ingen suppeanmeldelser enda. Fyll ut skjemaet over!</p>';
@@ -570,6 +586,7 @@
   }
 
   async function deleteReview(id) {
+    if (!supabase) { alert('Server ikke tilgjengelig'); return; }
     if (!confirm('Sikker på at du vil slette denne anmeldelsen?')) return;
     const { error } = await supabase.from('reviews').delete().eq('id', id);
     if (error) { alert('Klarte ikke å slette: ' + error.message); return; }
@@ -582,6 +599,11 @@
   // ============================================================
   document.getElementById('review-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    if (!supabase) {
+      alert('Kan ikke lagre nå – serveren er ikke tilgjengelig. Se feilmelding øverst på sida.');
+      return;
+    }
 
     if (Object.keys(currentRatings).length < KRITERIER.length) {
       alert('Du må gi karakter på alle 10 bud før du kan lagre!');
@@ -652,6 +674,7 @@
   const loginError = document.getElementById('login-error');
 
   async function checkAuth() {
+    if (!supabase) return;
     const { data: { session } } = await supabase.auth.getSession();
     isAdmin = !!(session && session.user && session.user.id === ADMIN_USER_ID);
     updateAdminUI();
@@ -668,6 +691,7 @@
   }
 
   adminToggle.addEventListener('click', async () => {
+    if (!supabase) { alert('Server ikke tilgjengelig'); return; }
     if (isAdmin) {
       await supabase.auth.signOut();
       isAdmin = false;
