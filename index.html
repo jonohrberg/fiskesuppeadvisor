@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jons Fiskesuppeadvisor</title>
+<title>Jons fiskesuppeadvisor</title>
 
 <!-- Supabase JS-bibliotek (gjør at vi kan snakke med databasen vår) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -31,6 +31,7 @@
     position: relative;
   }
   header h1 { margin: 0 0 8px; font-size: 2rem; }
+  .emoji-pair { letter-spacing: -0.2em; }
   header p { margin: 0; opacity: 0.85; font-style: italic; }
   main {
     max-width: 900px;
@@ -88,7 +89,7 @@
     font-weight: 500;
     font-size: 0.9rem;
   }
-  input[type="text"], input[type="date"], input[type="email"], input[type="password"] {
+  input[type="text"], input[type="date"], input[type="email"], input[type="password"], textarea {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid rgba(255, 255, 255, 0.25);
@@ -96,8 +97,17 @@
     background: rgba(255, 255, 255, 0.08);
     color: white;
     font-size: 1rem;
+    font-family: inherit;
   }
-  input::placeholder { color: rgba(255,255,255,0.5); }
+  input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.5); }
+  textarea { resize: vertical; min-height: 80px; }
+  .optional {
+    font-weight: normal;
+    opacity: 0.6;
+    font-size: 0.85em;
+    font-style: italic;
+  }
+  .comment-field { margin-bottom: 16px; }
 
   /* ---------- Kriterierader ---------- */
   .criteria {
@@ -124,12 +134,19 @@
 
   .scale-info {
     text-align: center;
-    padding: 10px;
+    padding: 14px;
     background: rgba(255,255,255,0.06);
     border-radius: 8px;
     margin-bottom: 16px;
     font-size: 0.9rem;
     opacity: 0.95;
+  }
+  .scale-title {
+    font-size: 1.15rem;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    opacity: 1;
   }
 
   .rating-buttons { display: flex; gap: 4px; align-items: center; }
@@ -218,6 +235,17 @@
     cursor: pointer; font-size: 0.8rem;
   }
   .delete-btn:hover { background: rgba(255, 153, 153, 0.15); }
+  .review-comment {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.05);
+    border-left: 3px solid rgba(255,255,255,0.25);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-style: italic;
+    opacity: 0.92;
+    white-space: pre-wrap;
+  }
   .empty { opacity: 0.7; text-align: center; font-style: italic; padding: 32px; }
   .loading { text-align: center; padding: 32px; opacity: 0.7; }
 
@@ -305,7 +333,7 @@
     <span id="admin-status"></span>
     <button class="admin-link" id="admin-toggle">Admin</button>
   </div>
-  <h1>🐟 Jons Fiskesuppeadvisor 👴✌️</h1>
+  <h1>🐟 Jons fiskesuppeadvisor <span class="emoji-pair">👴✌️</span></h1>
   <p>Alt iht. den bibelske skalaen: "thou shalt NOT"</p>
 </header>
 
@@ -348,6 +376,7 @@
       </div>
 
       <div class="scale-info">
+        <div class="scale-title">De 10 bud</div>
         Gi karakter 1–6 på hvert bud · <strong>1 = elendig</strong>, <strong>6 = perfekt</strong>
       </div>
 
@@ -355,6 +384,13 @@
 
       <div class="live-score">
         Terningkast: <span class="score-value" id="live-score">–</span>
+      </div>
+
+      <div class="comment-field">
+        <label>
+          <span class="label-text">Kommentar <span class="optional">(valgfritt)</span></span>
+          <textarea name="comment" rows="3" maxlength="500" placeholder="Si noen ord om opplevelsen, kelneren, stedet, eller hvilken som helst suppe-historie…"></textarea>
+        </label>
       </div>
 
       <button type="submit" id="submit-btn">Lagre anmeldelse</button>
@@ -415,14 +451,14 @@
   const KRITERIER = [
     "Passe tykk konsistens (ikke for tynn)",
     "Passe saltet (ikke for salt)",
-    "Pent kuttede grønnsaker",
+    "Pent kuttede grønnsaker (ikke for lange grønnsaker)",
     "Variasjon i fiskeslag (minst to typer)",
-    "Servert skikkelig varm",
-    "Ferskt brød og ordentlig smør ved siden av",
+    "Servert skikkelig varm (ikke for kald)",
+    "Ferskt brød og ordentlig smør ved siden av (ikke tørt brød, og ikke småpakkesmør)",
     "Passe stor porsjon (ikke for liten)",
-    "Fri for fiskebein",
+    "Fri for fiskebein (ingen kjøkkenpinsett ved bordet)",
     "Saftige fiskebiter (ikke overkokt eller tørre)",
-    "Passe store fiskebiter (én munnfull av gangen)"
+    "Passe store fiskebiter (ingen kniv nødvendig)"
   ];
 
   let currentRatings = {};
@@ -564,6 +600,7 @@
           <div class="restaurant">${escapeHtml(r.restaurant)}</div>
           <div class="meta">${escapeHtml(r.city)} • ${formatDate(r.date)}</div>
           ${r.reviewer_name ? `<div class="reviewer">Anmeldt av ${escapeHtml(r.reviewer_name)}</div>` : ''}
+          ${r.comment ? `<div class="review-comment">${escapeHtml(r.comment)}</div>` : ''}
           ${isAdmin ? `<button class="delete-btn" onclick="deleteReview('${r.id}')">Slett</button>` : ''}
         </div>
         <div>
@@ -633,6 +670,7 @@
       const values = Object.values(currentRatings);
       const average = values.reduce((a, b) => a + b, 0) / values.length;
 
+      const commentValue = (formData.get('comment') || '').trim();
       const { error } = await db.from('reviews').insert([{
         restaurant: formData.get('restaurant'),
         city: formData.get('city'),
@@ -640,7 +678,8 @@
         reviewer_name: formData.get('reviewer_name'),
         ratings: currentRatings,
         average: average,
-        image_url: imageUrl
+        image_url: imageUrl,
+        comment: commentValue || null
       }]);
       if (error) throw error;
 
