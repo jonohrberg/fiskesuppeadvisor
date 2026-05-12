@@ -710,4 +710,59 @@
     loginModal.classList.remove('open');
   });
 
-  document.getElementById('login-submit').addEventL
+  document.getElementById('login-submit').addEventListener('click', async () => {
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+    if (!email || !password) {
+      loginError.textContent = 'Skriv inn både email og passord.';
+      loginError.style.display = 'block';
+      return;
+    }
+    loginError.style.display = 'none';
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) {
+      loginError.textContent = 'Innlogging feilet: ' + error.message;
+      loginError.style.display = 'block';
+      return;
+    }
+    if (!data || !data.user || data.user.id !== ADMIN_USER_ID) {
+      await db.auth.signOut();
+      loginError.textContent = 'Denne brukeren er ikke admin.';
+      loginError.style.display = 'block';
+      return;
+    }
+    isAdmin = true;
+    updateAdminUI();
+    loginModal.classList.remove('open');
+    renderReviews();
+  });
+
+  // Lukk login-modalen om man klikker utenfor boksen
+  loginModal.addEventListener('click', (e) => {
+    if (e.target === loginModal) loginModal.classList.remove('open');
+  });
+
+  // ============================================================
+  // OPPSTART
+  // ============================================================
+  // Sett dagens dato som standard i datofeltet
+  const dateInput = document.querySelector('input[name="date"]');
+  if (dateInput) {
+    dateInput.value = new Date().toISOString().slice(0, 10);
+  }
+
+  // Hør på endringer i innlogging (f.eks. om session utløper)
+  if (db) {
+    db.auth.onAuthStateChange((_event, session) => {
+      isAdmin = !!(session && session.user && session.user.id === ADMIN_USER_ID);
+      updateAdminUI();
+      renderReviews();
+    });
+  }
+
+  checkAuth();
+  renderReviews();
+</script>
+
+</body>
+</html>
