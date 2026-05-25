@@ -1331,6 +1331,45 @@
       // Android Chrome: trigges av beforeinstallprompt-eventet over
     }, 1800);
   })();
+
+  // ============================================================
+  // 30-DAGERS PÅMINNELSE
+  // ============================================================
+  (function() {
+    const STORAGE_KEY = 'fiskesuppa_last_visit';
+    const DAYS = 30;
+    const now = Date.now();
+    const last = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    const daysSince = (now - last) / (1000 * 60 * 60 * 24);
+
+    // Oppdater siste besøk
+    localStorage.setItem(STORAGE_KEY, now.toString());
+
+    // Vis påminnelse hvis det er gått 30+ dager (og ikke første gang)
+    if (last > 0 && daysSince >= DAYS) {
+      setTimeout(() => {
+        const reminder = document.createElement('div');
+        reminder.style.cssText = `
+          position: fixed; top: 0; left: 0; right: 0;
+          background: rgba(7, 48, 128, 0.97);
+          border-bottom: 1px solid rgba(255,255,255,0.18);
+          padding: 14px 16px;
+          display: flex; align-items: center; justify-content: space-between;
+          z-index: 9998; gap: 12px;
+          backdrop-filter: blur(10px);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        `;
+        reminder.innerHTML = `
+          <span style="font-size:0.87rem;color:white;line-height:1.45;flex:1;">
+            🐟 Det er over ${Math.floor(daysSince)} dager siden siste anmeldelse! På tide å finne en ny suppe?
+          </span>
+          <button style="background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.25);padding:8px 11px;border-radius:8px;cursor:pointer;font-size:0.9rem;flex-shrink:0;">✕</button>
+        `;
+        document.body.appendChild(reminder);
+        reminder.querySelector('button').addEventListener('click', () => reminder.remove());
+      }, 2500);
+    }
+  })();
 </script>
 
 </body>
