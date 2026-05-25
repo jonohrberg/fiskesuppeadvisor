@@ -1070,6 +1070,87 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
+
+  // ============================================================
+  // INSTALLER-BANNER
+  // ============================================================
+  (function() {
+    // Ikke vis hvis appen allerede kjører som installert PWA
+    if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) return;
+
+    const ua = navigator.userAgent;
+    const isIOS        = /iphone|ipad|ipod/i.test(ua);
+    const isAndroid    = /android/i.test(ua);
+    const isInAppBrowser = /FBAN|FBAV|Messenger|Instagram|Twitter|Line|MicroMessenger/i.test(ua);
+    const isSafari     = /safari/i.test(ua) && !/chrome|crios|fxios/i.test(ua);
+
+    let deferredPrompt = null;
+
+    // Android Chrome fanger opp install-prompten her
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      showBanner('android-ready');
+    });
+
+    function showBanner(type) {
+      if (document.getElementById('install-banner')) return;
+
+      const banner = document.createElement('div');
+      banner.id = 'install-banner';
+      banner.style.cssText = `
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: rgba(7, 48, 128, 0.97);
+        border-top: 1px solid rgba(255,255,255,0.18);
+        padding: 14px 16px;
+        display: flex; align-items: center; justify-content: space-between;
+        z-index: 9999; gap: 12px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+      `;
+
+      const msgs = {
+        'inapp-ios':     '📲 Åpne lenken i <strong>Safari</strong> for å installere Fiskesuppa som app.',
+        'inapp-android': '📲 Åpne lenken i <strong>Chrome</strong> for å installere Fiskesuppa som app.',
+        'ios-safari':    '📲 Trykk på <strong>Del-ikonet</strong> nederst og velg <strong>«Legg til på hjemskjerm»</strong>.',
+        'android-ready': '📲 Installer <strong>Fiskesuppa</strong> som app!',
+      };
+
+      banner.innerHTML = `
+        <span style="font-size:0.87rem;color:white;line-height:1.45;flex:1;">${msgs[type]}</span>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          ${type === 'android-ready'
+            ? '<button id="pwa-install-btn" style="background:#4ade80;color:#041a4a;border:none;padding:9px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:0.85rem;">Installer</button>'
+            : ''}
+          <button id="pwa-dismiss-btn" style="background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.25);padding:8px 11px;border-radius:8px;cursor:pointer;font-size:0.9rem;">✕</button>
+        </div>
+      `;
+
+      document.body.appendChild(banner);
+
+      document.getElementById('pwa-dismiss-btn').addEventListener('click', () => banner.remove());
+
+      if (type === 'android-ready') {
+        document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          banner.remove();
+        });
+      }
+    }
+
+    // Vis riktig banner etter litt forsinkelse
+    setTimeout(() => {
+      if (isInAppBrowser) {
+        showBanner(isIOS ? 'inapp-ios' : 'inapp-android');
+      } else if (isIOS && isSafari) {
+        showBanner('ios-safari');
+      }
+      // Android Chrome: trigges av beforeinstallprompt-eventet over
+    }, 1800);
+  })();
 </script>
 
 </body>
