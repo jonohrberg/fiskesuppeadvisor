@@ -485,6 +485,55 @@
   }
   .reviewer-achievements { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 
+  /* ---------- Fiske-partikler ---------- */
+  @keyframes fishFloat {
+    0%   { transform: translateY(0) rotate(0deg) scale(1);   opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(-95vh) rotate(540deg) scale(0.5); opacity: 0; }
+  }
+  .fish-particle {
+    position: fixed;
+    bottom: -60px;
+    pointer-events: none;
+    z-index: 99999;
+    animation: fishFloat linear forwards;
+  }
+
+  /* ---------- Rekord og utfordring ---------- */
+  .restaurant-record {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 2px;
+    margin-bottom: 6px;
+  }
+  .challenge-btn {
+    background: transparent;
+    border: 1px solid rgba(255,215,0,0.4);
+    color: rgba(255,215,0,0.85);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    margin-left: 6px;
+    transition: all 0.15s;
+  }
+  .challenge-btn:hover { background: rgba(255,215,0,0.1); border-color: gold; color: gold; }
+
+  /* ---------- Tilfeldig suppe ---------- */
+  .random-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.75);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    width: 100%;
+    transition: all 0.15s;
+  }
+  .random-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+
   .review-card.has-image { grid-template-columns: 90px 1fr auto; }
   .review-thumb {
     width: 90px; height: 90px; border-radius: 10px;
@@ -639,6 +688,7 @@
   <!-- ===== Liste over alle anmeldelser ===== -->
   <section>
     <h2>Alle anmeldelser</h2>
+    <button class="random-btn" onclick="tilfeldigSuppe()">🎲 Gi meg en tilfeldig suppe å dra på!</button>
     <div id="review-list">
       <p class="loading">Laster anmeldelser…</p>
     </div>
@@ -720,6 +770,45 @@
   }
 
   // ============================================================
+  // ANIMASJONER: KONFETTI OG FISKE-PARTIKLER
+  // ============================================================
+  let confettiLoaded = false;
+  async function showConfetti() {
+    if (!confettiLoaded) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      confettiLoaded = true;
+    }
+    const end = Date.now() + 2500;
+    const colors = ['#4ade80','#0a4db5','#ffd700','#ff6b35','#fff'];
+    (function frame() {
+      confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors });
+      confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }
+
+  function showFishParticles() {
+    const fishes = ['🐟','🐠','🐡','🦈','🎣','🦐','🦑','🐙'];
+    for (let i = 0; i < 14; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'fish-particle';
+        el.textContent = fishes[Math.floor(Math.random() * fishes.length)];
+        el.style.left = `${5 + Math.random() * 90}vw`;
+        el.style.fontSize = `${1.2 + Math.random() * 1.4}rem`;
+        el.style.animationDuration = `${1.8 + Math.random() * 1.8}s`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      }, i * 120);
+    }
+  }
+
+  // ============================================================
   // RANG OG ACHIEVEMENTS
   // ============================================================
   const RANKS = [
@@ -766,7 +855,19 @@
     if (daysSince <= 30)
       achievements.push({ emoji: '🔥', name: 'På strek',          desc: 'Anmeldt noe siste 30 dager' });
     if (count >= 5)
-      achievements.push({ emoji: '📚', name: 'Ivrig anmelder',    desc: '5 eller flere anmeldelser' });
+      achievements.push({ emoji: '📚', name: 'Ivrig anmelder', desc: '5 eller flere anmeldelser' });
+
+    // Vendetta: har gitt minst 1,5 poeng lavere enn en kompis på samme restaurant
+    const hasVendetta = mine.some(r => {
+      const key = (r.restaurant||'').trim().toLowerCase()+'|'+(r.city||'').trim().toLowerCase();
+      return allReviews.some(other =>
+        (other.reviewer_name||'').toLowerCase().trim() !== name.toLowerCase().trim() &&
+        (other.restaurant||'').trim().toLowerCase()+'|'+(other.city||'').trim().toLowerCase() === key &&
+        Number(other.average) - Number(r.average) >= 1.5
+      );
+    });
+    if (hasVendetta)
+      achievements.push({ emoji: '🗡️', name: 'Vendetta', desc: 'Har gitt mye lavere score enn en kompis på samme restaurant' });
 
     return { count, rank, achievements, citiesCount: cities.size };
   }
@@ -1034,7 +1135,12 @@
               <div class="restaurant-rank">#${gi + 1}</div>
               <div class="restaurant-name">${escapeHtml(g.restaurant)}</div>
               <div class="restaurant-meta">${escapeHtml(g.city)}</div>
+              <div class="restaurant-record">${(() => {
+                const best = g.reviews.reduce((a, b) => Number(a.average) > Number(b.average) ? a : b);
+                return `🥇 ${escapeHtml(best.reviewer_name||'Anonym')} holder rekorden (${Number(best.average).toFixed(1).replace('.',',')})`;
+              })()}</div>
               <button class="toggle-btn" id="toggle-btn-${gi}" onclick="toggleReviews(${gi})">▼ Vis ${countText}</button>
+              <button class="challenge-btn" onclick="utfordring('${escapeHtml(g.restaurant)}','${escapeHtml(g.city)}',${accAvg.toFixed(1)})">⚔️ Utfordre</button>
             </div>
             <div class="restaurant-score-block">
               <div class="restaurant-score">${accAvg.toFixed(1).replace('.', ',')}</div>
@@ -1065,6 +1171,21 @@
       return;
     }
 
+    // Finn månedlig suppemester
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const monthlyCount = {};
+    allReviews.forEach(r => {
+      if ((r.date||'').startsWith(thisMonth)) {
+        const n = (r.reviewer_name||'').trim();
+        if (n) monthlyCount[n] = (monthlyCount[n]||0) + 1;
+      }
+    });
+    const maxMonthly = Math.max(0, ...Object.values(monthlyCount));
+    const suppemester = maxMonthly > 0
+      ? Object.keys(monthlyCount).find(n => monthlyCount[n] === maxMonthly)
+      : null;
+
     // Sorter etter antall anmeldelser
     const ranked = names
       .map(name => ({ name, stats: getReviewerStats(name, allReviews) }))
@@ -1080,12 +1201,15 @@
            </div>`
         : '';
 
+      const isSuppemester = suppemester &&
+        suppemester.toLowerCase().trim() === name.toLowerCase().trim();
+
       return `
         <div class="reviewer-card">
           <div class="reviewer-card-top">
             <div>
-              <div class="reviewer-card-name">${escapeHtml(name)}</div>
-              <div class="reviewer-card-rank">${stats.rank.emoji} ${stats.rank.title}</div>
+              <div class="reviewer-card-name">${isSuppemester ? '👑 ' : ''}${escapeHtml(name)}</div>
+              <div class="reviewer-card-rank">${stats.rank.emoji} ${stats.rank.title}${isSuppemester ? ' · Suppemester denne måneden!' : ''}</div>
             </div>
             <div style="text-align:right;">
               <div class="reviewer-card-count">${stats.count}</div>
@@ -1097,6 +1221,26 @@
       `;
     }).join('');
   }
+
+  function tilfeldigSuppe() {
+    const kort = document.querySelectorAll('.restaurant-name');
+    if (kort.length === 0) { alert('Ingen supper i lista enda!'); return; }
+    const valgt = kort[Math.floor(Math.random() * kort.length)];
+    const by = valgt.closest('.restaurant-header').querySelector('.restaurant-meta').textContent;
+    alert(`🎲 Her burde du dra:\n\n${valgt.textContent} — ${by}\n\nNu e det ingen unnskyldninga!`);
+  }
+  window.tilfeldigSuppe = tilfeldigSuppe;
+
+  async function utfordring(restaurant, city, score) {
+    const tekst = `Jeg utfordrer deg til å slå min score på ${restaurant}, ${city} (${String(score).replace('.',',')} i terningkast) — klarer du det, din kuk? 🐟\nhttps://fiskesuppeadvisor.vercel.app`;
+    if (navigator.share) {
+      try { await navigator.share({ text: tekst }); return; } catch(e) {}
+    }
+    navigator.clipboard.writeText(tekst).then(() =>
+      alert('Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.')
+    ).catch(() => alert(tekst));
+  }
+  window.utfordring = utfordring;
 
   function toggleReviews(gi) {
     const section = document.getElementById(`ind-reviews-${gi}`);
@@ -1185,6 +1329,17 @@
       const values = Object.values(currentRatings);
       const average = values.reduce((a, b) => a + b, 0) / values.length;
 
+      // Sjekk om reviewer allerede har anmeldt denne restauranten
+      const { data: existing } = await db.from('reviews')
+        .select('id')
+        .ilike('restaurant', normalizeName(formData.get('restaurant')))
+        .ilike('reviewer_name', normalizeName(formData.get('reviewer_name')))
+        .limit(1);
+      if (existing && existing.length > 0) {
+        const junkie = confirm('Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?');
+        if (!junkie) { submitBtn.disabled = false; submitBtn.textContent = 'Lagre anmeldelse'; return; }
+      }
+
       const commentValue = (formData.get('comment') || '').trim();
       const { error } = await db.from('reviews').insert([{
         restaurant: normalizeName(formData.get('restaurant')),
@@ -1207,7 +1362,16 @@
       updateLiveScore();
       await renderReviews();
 
-      alert(`Lagret! ${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+      // Score-baserte meldinger og animasjoner
+      if (average >= 6.0) {
+        showConfetti();
+        setTimeout(() => alert(`🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`), 400);
+      } else if (average < 2.0) {
+        alert(`💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+      } else {
+        showFishParticles();
+        alert(`Lagret! ${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+      }
     } catch (err) {
       alert('Noe gikk galt: ' + err.message);
       console.error(err);
