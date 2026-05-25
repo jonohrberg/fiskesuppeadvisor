@@ -387,6 +387,59 @@
   .ind-score { font-size: 1.5rem; font-weight: bold; color: #4ade80; text-align: right; }
   .ind-score-label { font-size: 0.7rem; opacity: 0.55; text-align: right; text-transform: uppercase; letter-spacing: 0.05em; }
 
+  /* ---------- Rang og badges ---------- */
+  .rank-badge {
+    display: inline-block;
+    font-size: 0.78rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px;
+    padding: 2px 8px;
+    margin-top: 3px;
+    color: rgba(255,255,255,0.85);
+  }
+  .achievement-pill {
+    display: inline-block;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 3px 9px;
+    margin: 2px 3px 2px 0;
+    cursor: default;
+  }
+
+  /* ---------- Anmeldere (Hall of Fame) ---------- */
+  .reviewer-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .reviewer-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .reviewer-card-name { font-size: 1.05rem; font-weight: bold; }
+  .reviewer-card-rank { font-size: 0.82rem; opacity: 0.75; margin-top: 2px; }
+  .reviewer-card-count {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4ade80;
+    line-height: 1;
+  }
+  .reviewer-card-count-label {
+    font-size: 0.7rem;
+    opacity: 0.55;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .reviewer-achievements { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
   .review-card.has-image { grid-template-columns: 90px 1fr auto; }
   .review-thumb {
     width: 90px; height: 90px; border-radius: 10px;
@@ -546,6 +599,14 @@
     </div>
   </section>
 
+  <!-- ===== Anmeldere – Hall of Fame ===== -->
+  <section>
+    <h2>🏅 Anmeldere</h2>
+    <div id="reviewer-list">
+      <p class="loading">Laster…</p>
+    </div>
+  </section>
+
 </main>
 
 <!-- Stor bilde-visning -->
@@ -611,6 +672,58 @@
   function normalizeName(s) {
     const t = (s || '').trim().replace(/\s+/g, ' ');
     return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  // ============================================================
+  // RANG OG ACHIEVEMENTS
+  // ============================================================
+  const RANKS = [
+    { min: 20, title: 'Neptuns Utvalgte',  emoji: '🔱' },
+    { min: 10, title: 'Suppedommeren',     emoji: '👨‍⚖️' },
+    { min: 5,  title: 'Sjøkapteinen',      emoji: '⚓' },
+    { min: 3,  title: 'Fiskeren',          emoji: '🎣' },
+    { min: 1,  title: 'Fiskeelskeren',     emoji: '🐟' },
+  ];
+
+  function getReviewerStats(name, allReviews) {
+    const mine = allReviews.filter(r =>
+      (r.reviewer_name || '').toLowerCase().trim() === name.toLowerCase().trim()
+    );
+    const count = mine.length;
+    const rank = RANKS.find(r => count >= r.min) || RANKS[RANKS.length - 1];
+    const cities = new Set(mine.map(r => (r.city || '').trim().toLowerCase()));
+
+    const latestDate = mine.reduce((latest, r) => {
+      const d = new Date(r.date);
+      return d > latest ? d : latest;
+    }, new Date(0));
+    const daysSince = (Date.now() - latestDate) / (1000 * 60 * 60 * 24);
+
+    // Finn første anmelder per restaurant (pionér-sjekk)
+    const firstReviewers = {};
+    [...allReviews]
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .forEach(r => {
+        const key = (r.restaurant || '').trim().toLowerCase() + '|' + (r.city || '').trim().toLowerCase();
+        if (!firstReviewers[key]) firstReviewers[key] = (r.reviewer_name || '').toLowerCase().trim();
+      });
+    const isPioneer = Object.values(firstReviewers).includes(name.toLowerCase().trim());
+
+    const achievements = [];
+    if (isPioneer)
+      achievements.push({ emoji: '🥇', name: 'Pioneren',          desc: 'Første til å anmelde en restaurant' });
+    if (mine.some(r => Number(r.average) >= 5.5))
+      achievements.push({ emoji: '🏆', name: 'Gourmeten',         desc: 'Gitt terningkast 5,5 eller høyere' });
+    if (mine.some(r => Number(r.average) <= 3.0))
+      achievements.push({ emoji: '🦀', name: 'Kresen',            desc: 'Gitt terningkast 3,0 eller lavere' });
+    if (cities.size >= 3)
+      achievements.push({ emoji: '🗺️', name: 'Eventyreren',       desc: 'Anmeldt i 3 eller flere byer' });
+    if (daysSince <= 30)
+      achievements.push({ emoji: '🔥', name: 'På strek',          desc: 'Anmeldt noe siste 30 dager' });
+    if (count >= 5)
+      achievements.push({ emoji: '📚', name: 'Ivrig anmelder',    desc: '5 eller flere anmeldelser' });
+
+    return { count, rank, achievements, citiesCount: cities.size };
   }
 
   // ============================================================
@@ -814,6 +927,7 @@
       return avgB - avgA;
     });
 
+    renderReviewers(reviews);
     listEl.innerHTML = sorted.map((g, gi) => {
       const accAvg = g.reviews.reduce((s, r) => s + Number(r.average), 0) / g.reviews.length;
       const count = g.reviews.length;
@@ -822,10 +936,14 @@
       // Sorter enkeltanmeldelsene nyeste først
       const sortedReviews = [...g.reviews].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      const individualHtml = sortedReviews.map(r => `
+      const individualHtml = sortedReviews.map(r => {
+        const rName = r.reviewer_name || 'Anonym';
+        const stats = getReviewerStats(rName, reviews);
+        return `
         <div class="individual-review">
           <div>
-            <div class="ind-reviewer">${escapeHtml(r.reviewer_name || 'Anonym')}</div>
+            <div class="ind-reviewer">${escapeHtml(rName)}</div>
+            <div><span class="rank-badge">${stats.rank.emoji} ${stats.rank.title}</span></div>
             <div class="ind-meta">${formatDate(r.date)}</div>
             ${r.comment ? `<div class="ind-comment">${escapeHtml(r.comment)}</div>` : ''}
             ${r.image_url ? `<img class="review-thumb" style="margin-top:6px;width:70px;height:70px;border-radius:8px;object-fit:cover;cursor:pointer;" src="${r.image_url}" alt="" onclick="openLightbox('${r.image_url}')">` : ''}
@@ -836,7 +954,8 @@
             <div class="ind-score-label">Terningkast</div>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
 
       return `
         <div class="restaurant-card">
@@ -855,6 +974,55 @@
           <div class="individual-reviews" id="ind-reviews-${gi}">
             ${individualHtml}
           </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderReviewers(allReviews) {
+    const listEl = document.getElementById('reviewer-list');
+    if (!listEl) return;
+
+    // Finn unike anmeldere
+    const names = [...new Set(
+      allReviews
+        .map(r => (r.reviewer_name || '').trim())
+        .filter(n => n.length > 0)
+    )];
+
+    if (names.length === 0) {
+      listEl.innerHTML = '<p class="empty">Ingen anmeldere enda.</p>';
+      return;
+    }
+
+    // Sorter etter antall anmeldelser
+    const ranked = names
+      .map(name => ({ name, stats: getReviewerStats(name, allReviews) }))
+      .sort((a, b) => b.stats.count - a.stats.count);
+
+    listEl.innerHTML = ranked.map(({ name, stats }) => {
+      const countText = stats.count === 1 ? '1 anmeldelse' : `${stats.count} anmeldelser`;
+      const achievementsHtml = stats.achievements.length > 0
+        ? `<div class="reviewer-achievements">
+            ${stats.achievements.map(a =>
+              `<span class="achievement-pill" title="${escapeHtml(a.desc)}">${a.emoji} ${escapeHtml(a.name)}</span>`
+            ).join('')}
+           </div>`
+        : '';
+
+      return `
+        <div class="reviewer-card">
+          <div class="reviewer-card-top">
+            <div>
+              <div class="reviewer-card-name">${escapeHtml(name)}</div>
+              <div class="reviewer-card-rank">${stats.rank.emoji} ${stats.rank.title}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="reviewer-card-count">${stats.count}</div>
+              <div class="reviewer-card-count-label">anmeldelser</div>
+            </div>
+          </div>
+          ${achievementsHtml}
         </div>
       `;
     }).join('');
