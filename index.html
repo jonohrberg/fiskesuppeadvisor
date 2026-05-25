@@ -1145,8 +1145,21 @@
     }
 
     if (Object.keys(currentRatings).length < KRITERIER.length) {
-      alert('Du må gi karakter på alle 10 bud før du kan lagre!');
+      alert('E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!');
       return;
+    }
+
+    // Påminnelse om bilde mangler (valgfritt, men spør)
+    if (!currentImageBlob) {
+      const fortsett = confirm('Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.');
+      if (!fortsett) return;
+    }
+
+    // Påminnelse om kommentar mangler (valgfritt, men spør)
+    const kommentarVerdi = (document.querySelector('textarea[name="comment"]').value || '').trim();
+    if (!kommentarVerdi) {
+      const fortsett2 = confirm('Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.');
+      if (!fortsett2) return;
     }
 
     const submitBtn = document.getElementById('submit-btn');
