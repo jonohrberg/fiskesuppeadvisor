@@ -16,6 +16,51 @@
 <!-- Supabase JS-bibliotek (gjør at vi kan snakke med databasen vår) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<!-- TensorFlow.js + MobileNet for bildegjenkjenning (lastes kun ved behov) -->
+<script>
+  let tfLoaded = false;
+  let mnModel = null;
+
+  async function loadMobileNet() {
+    if (mnModel) return mnModel;
+    if (!tfLoaded) {
+      await Promise.all([
+        new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.2.0/dist/tf.min.js';
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        }),
+        new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js';
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        })
+      ]);
+      tfLoaded = true;
+    }
+    mnModel = await mobilenet.load({ version: 2, alpha: 0.5 });
+    return mnModel;
+  }
+
+  async function erDetteEiFiskesuppe(imgEl) {
+    try {
+      const model = await loadMobileNet();
+      const predictions = await model.classify(imgEl, 10);
+      const matOrd = ['soup', 'bowl', 'broth', 'stew', 'chowder', 'bisque',
+                      'caldron', 'consomme', 'pot', 'ladle', 'food', 'dish',
+                      'meal', 'plate', 'fish', 'seafood', 'sauce', 'gravy'];
+      return predictions.some(p =>
+        matOrd.some(w => p.className.toLowerCase().includes(w))
+      );
+    } catch (e) {
+      console.warn('Bildesjekk feilet, slipper gjennom:', e);
+      return true; // la det gå gjennom hvis modellen krasjer
+    }
+  }
+</script>
+
 <style>
   /* ---------- Generelt utseende ---------- */
   * { box-sizing: border-box; }
@@ -831,11 +876,36 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      resizeImage(ev.target.result, 1000, (blob, previewUrl) => {
+      resizeImage(ev.target.result, 1000, async (blob, previewUrl) => {
+        // Vis midlertidig forhåndsvisning mens vi sjekker
+        imagePreview.innerHTML = `
+          <img id="check-img" src="${previewUrl}" alt="" style="max-width:100%;max-height:200px;border-radius:10px;opacity:0.6;">
+          <p style="text-align:center;font-size:0.85rem;opacity:0.7;margin-top:8px;">🔍 Sjekker om dette faktisk er ei fiskesuppe…</p>
+        `;
+
+        // Vent til bildet er lastet inn i DOM
+        const checkImg = document.getElementById('check-img');
+        await new Promise(res => { checkImg.complete ? res() : checkImg.addEventListener('load', res); });
+
+        const erSuppe = await erDetteEiFiskesuppe(checkImg);
+
+        if (!erSuppe) {
+          clearImage();
+          imagePreview.innerHTML = `
+            <div style="padding:18px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:10px;text-align:center;">
+              <div style="font-size:1.6rem;margin-bottom:8px;">😏</div>
+              <p style="font-weight:bold;margin:0 0 6px;font-size:1rem;">Nu va du smart. Nu va du veeeldig smart!</p>
+              <p style="font-size:0.85rem;opacity:0.75;margin:0;">Dette ser ikke ut som ei fiskesuppe. Last opp et bilde av suppa di.</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Godkjent — vis ordentlig forhåndsvisning
         currentImageBlob = blob;
         currentImageUrl = previewUrl;
         imagePreview.innerHTML = `
-          <img src="${previewUrl}" alt="Forhåndsvisning">
+          <img src="${previewUrl}" alt="Forhåndsvisning" style="max-width:100%;max-height:240px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);">
           <br><button type="button" class="remove-image" id="remove-image">Fjern bilde</button>
         `;
         document.getElementById('remove-image').addEventListener('click', clearImage);
