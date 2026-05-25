@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jons fiskesuppeadvisor</title>
 
+<!-- PWA: manifest og iOS-støtte -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a4db5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fiskesuppa">
+<link rel="apple-touch-icon" href="icon-192.png">
+
 <!-- Supabase JS-bibliotek (gjør at vi kan snakke med databasen vår) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -1057,6 +1065,11 @@
 
   checkAuth();
   renderReviews();
+
+  // Registrer service worker for PWA-installasjon
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 </script>
 
 </body>
