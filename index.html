@@ -275,6 +275,102 @@
   .empty { opacity: 0.7; text-align: center; font-style: italic; padding: 32px; }
   .loading { text-align: center; padding: 32px; opacity: 0.7; }
 
+  /* ---------- Autocomplete ---------- */
+  .autocomplete-wrapper { position: relative; }
+  .autocomplete-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #0f2942;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    margin-top: 4px;
+    z-index: 100;
+    max-height: 220px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .autocomplete-dropdown.open { display: block; }
+  .autocomplete-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover { background: rgba(255,255,255,0.1); }
+  .autocomplete-item .ac-city { opacity: 0.6; font-size: 0.85rem; margin-left: 6px; }
+
+  /* ---------- Leaderboard ---------- */
+  .restaurant-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .restaurant-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 16px;
+    gap: 16px;
+  }
+  .restaurant-rank {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .restaurant-name { font-size: 1.15rem; font-weight: bold; margin-bottom: 2px; }
+  .restaurant-meta { font-size: 0.85rem; opacity: 0.65; margin-bottom: 8px; }
+  .toggle-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.65);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .toggle-btn:hover { border-color: rgba(255,255,255,0.5); color: white; }
+  .restaurant-score-block { text-align: right; }
+  .restaurant-score { font-size: 2.2rem; font-weight: bold; color: #4ade80; }
+  .restaurant-score-label {
+    font-size: 0.7rem; opacity: 0.55;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .individual-reviews { display: none; border-top: 1px solid rgba(255,255,255,0.08); }
+  .individual-reviews.open { display: block; }
+  .individual-review {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    padding: 12px 16px;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .individual-review:last-child { border-bottom: none; }
+  .ind-reviewer { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; }
+  .ind-meta { font-size: 0.8rem; opacity: 0.6; margin-bottom: 6px; }
+  .ind-comment {
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.05);
+    border-left: 3px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-style: italic;
+    opacity: 0.9;
+    margin-bottom: 6px;
+    white-space: pre-wrap;
+  }
+  .ind-score { font-size: 1.5rem; font-weight: bold; color: #4ade80; text-align: right; }
+  .ind-score-label { font-size: 0.7rem; opacity: 0.55; text-align: right; text-transform: uppercase; letter-spacing: 0.05em; }
+
   .review-card.has-image { grid-template-columns: 90px 1fr auto; }
   .review-thumb {
     width: 90px; height: 90px; border-radius: 10px;
@@ -373,7 +469,10 @@
       <div class="meta-fields">
         <label>
           <span class="label-text">Restaurant</span>
-          <input type="text" name="restaurant" placeholder="F.eks. Fiskeriet" required>
+          <div class="autocomplete-wrapper">
+            <input type="text" name="restaurant" id="restaurant-input" placeholder="F.eks. Fiskeriet" required autocomplete="off">
+            <div class="autocomplete-dropdown" id="ac-dropdown"></div>
+          </div>
         </label>
         <label>
           <span class="label-text">Sted</span>
@@ -491,6 +590,69 @@
   let currentImageBlob = null;
   let currentImageUrl = null; // for forhåndsvisning
   let isAdmin = false;
+
+  // Normaliser navn: trim whitespace og stor forbokstav
+  function normalizeName(s) {
+    const t = (s || '').trim().replace(/\s+/g, ' ');
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  // ============================================================
+  // AUTOCOMPLETE PÅ RESTAURANTFELTET
+  // ============================================================
+  const restaurantInput = document.getElementById('restaurant-input');
+  const cityInput = document.querySelector('input[name="city"]');
+  const acDropdown = document.getElementById('ac-dropdown');
+  let acTimeout = null;
+
+  restaurantInput.addEventListener('input', () => {
+    clearTimeout(acTimeout);
+    const q = restaurantInput.value.trim();
+    if (q.length < 2) { acDropdown.classList.remove('open'); return; }
+    acTimeout = setTimeout(() => fetchSuggestions(q), 220);
+  });
+
+  restaurantInput.addEventListener('blur', () => {
+    setTimeout(() => acDropdown.classList.remove('open'), 180);
+  });
+
+  async function fetchSuggestions(q) {
+    if (!db) return;
+    const { data } = await db
+      .from('reviews')
+      .select('restaurant, city')
+      .ilike('restaurant', `%${q}%`)
+      .limit(30);
+    if (!data || data.length === 0) { acDropdown.classList.remove('open'); return; }
+
+    // Dedupliser på restaurant+by (case-insensitiv)
+    const seen = new Set();
+    const unique = data.filter(r => {
+      const key = r.restaurant.toLowerCase().trim() + '|' + r.city.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    acDropdown.innerHTML = unique.map(r => `
+      <div class="autocomplete-item"
+           data-restaurant="${escapeHtml(r.restaurant)}"
+           data-city="${escapeHtml(r.city)}">
+        ${escapeHtml(r.restaurant)}<span class="ac-city">${escapeHtml(r.city)}</span>
+      </div>
+    `).join('');
+
+    acDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        restaurantInput.value = item.dataset.restaurant;
+        cityInput.value = item.dataset.city;
+        acDropdown.classList.remove('open');
+      });
+    });
+
+    acDropdown.classList.add('open');
+  }
 
   // ============================================================
   // BYGG KRITERIE-RADENE
@@ -619,23 +781,83 @@
       return;
     }
 
-    listEl.innerHTML = reviews.map(r => `
-      <div class="review-card ${r.image_url ? 'has-image' : ''}">
-        ${r.image_url ? `<img class="review-thumb" src="${r.image_url}" alt="" onclick="openLightbox('${r.image_url}')">` : ''}
-        <div>
-          <div class="restaurant">${escapeHtml(r.restaurant)}</div>
-          <div class="meta">${escapeHtml(r.city)} • ${formatDate(r.date)}</div>
-          ${r.reviewer_name ? `<div class="reviewer">Anmeldt av ${escapeHtml(r.reviewer_name)}</div>` : ''}
-          ${r.comment ? `<div class="review-comment">${escapeHtml(r.comment)}</div>` : ''}
-          ${isAdmin ? `<button class="delete-btn" onclick="deleteReview('${r.id}')">Slett</button>` : ''}
+    // Grupper på restaurant + by (case-insensitivt)
+    const groups = {};
+    reviews.forEach(r => {
+      const key = r.restaurant.trim().toLowerCase() + '|' + r.city.trim().toLowerCase();
+      if (!groups[key]) {
+        groups[key] = { restaurant: r.restaurant, city: r.city, reviews: [] };
+      }
+      groups[key].reviews.push(r);
+    });
+
+    // Sorter grupper etter akkumulert snitt, høyest øverst
+    const sorted = Object.values(groups).sort((a, b) => {
+      const avgA = a.reviews.reduce((s, r) => s + Number(r.average), 0) / a.reviews.length;
+      const avgB = b.reviews.reduce((s, r) => s + Number(r.average), 0) / b.reviews.length;
+      return avgB - avgA;
+    });
+
+    listEl.innerHTML = sorted.map((g, gi) => {
+      const accAvg = g.reviews.reduce((s, r) => s + Number(r.average), 0) / g.reviews.length;
+      const count = g.reviews.length;
+      const countText = count === 1 ? '1 anmeldelse' : `${count} anmeldelser`;
+
+      // Sorter enkeltanmeldelsene nyeste først
+      const sortedReviews = [...g.reviews].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      const individualHtml = sortedReviews.map(r => `
+        <div class="individual-review">
+          <div>
+            <div class="ind-reviewer">${escapeHtml(r.reviewer_name || 'Anonym')}</div>
+            <div class="ind-meta">${formatDate(r.date)}</div>
+            ${r.comment ? `<div class="ind-comment">${escapeHtml(r.comment)}</div>` : ''}
+            ${r.image_url ? `<img class="review-thumb" style="margin-top:6px;width:70px;height:70px;border-radius:8px;object-fit:cover;cursor:pointer;" src="${r.image_url}" alt="" onclick="openLightbox('${r.image_url}')">` : ''}
+            ${isAdmin ? `<button class="delete-btn" style="margin-top:6px;display:block;" onclick="deleteReview('${r.id}')">Slett</button>` : ''}
+          </div>
+          <div>
+            <div class="ind-score">${Number(r.average).toFixed(1).replace('.', ',')}</div>
+            <div class="ind-score-label">Terningkast</div>
+          </div>
         </div>
-        <div>
-          <div class="score">${Number(r.average).toFixed(1).replace('.', ',')}</div>
-          <div class="score-label">Terningkast</div>
+      `).join('');
+
+      return `
+        <div class="restaurant-card">
+          <div class="restaurant-header">
+            <div>
+              <div class="restaurant-rank">#${gi + 1}</div>
+              <div class="restaurant-name">${escapeHtml(g.restaurant)}</div>
+              <div class="restaurant-meta">${escapeHtml(g.city)}</div>
+              <button class="toggle-btn" id="toggle-btn-${gi}" onclick="toggleReviews(${gi})">▼ Vis ${countText}</button>
+            </div>
+            <div class="restaurant-score-block">
+              <div class="restaurant-score">${accAvg.toFixed(1).replace('.', ',')}</div>
+              <div class="restaurant-score-label">${count > 1 ? `Snitt av ${count}` : 'Terningkast'}</div>
+            </div>
+          </div>
+          <div class="individual-reviews" id="ind-reviews-${gi}">
+            ${individualHtml}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
+
+  function toggleReviews(gi) {
+    const section = document.getElementById(`ind-reviews-${gi}`);
+    const btn = document.getElementById(`toggle-btn-${gi}`);
+    const count = section.querySelectorAll('.individual-review').length;
+    const countText = count === 1 ? '1 anmeldelse' : `${count} anmeldelser`;
+    if (section.classList.contains('open')) {
+      section.classList.remove('open');
+      btn.textContent = `▼ Vis ${countText}`;
+    } else {
+      section.classList.add('open');
+      btn.textContent = `▲ Skjul ${countText}`;
+    }
+  }
+  window.toggleReviews = toggleReviews;
 
   function escapeHtml(s) {
     const div = document.createElement('div');
@@ -698,10 +920,10 @@
 
       const commentValue = (formData.get('comment') || '').trim();
       const { error } = await db.from('reviews').insert([{
-        restaurant: formData.get('restaurant'),
-        city: formData.get('city'),
+        restaurant: normalizeName(formData.get('restaurant')),
+        city: normalizeName(formData.get('city')),
         date: formData.get('date'),
-        reviewer_name: formData.get('reviewer_name'),
+        reviewer_name: normalizeName(formData.get('reviewer_name')),
         ratings: currentRatings,
         average: average,
         image_url: imageUrl,
