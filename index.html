@@ -12,8 +12,7 @@
   /* ---------- Generelt utseende ---------- */
   * { box-sizing: border-box; }
   html {
-    /* Fallback-farger i tilfelle bakgrunnsbildet ikke laster */
-    background: linear-gradient(180deg, #0f2942 0%, #1e4d7b 100%);
+    background: #050f2e;
     min-height: 100%;
   }
   body {
@@ -25,23 +24,32 @@
     min-height: 100vh;
     position: relative;
   }
-  /* Bakgrunnsbilde — sløret kraftig så Snapchat-teksten viskes ut til abstrakt tekstur */
+  /* Azure-gradient bakgrunn — lag 1: dyp havbunn til azurblå */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: url('bakgrunn.jpg') center 65% / cover no-repeat;
-    filter: blur(22px) saturate(1.25);
-    transform: scale(1.2);
+    background:
+      linear-gradient(180deg,
+        #020c24 0%,
+        #041a4a 20%,
+        #073080 45%,
+        #0a4db5 68%,
+        #0e6fd4 85%,
+        #1a8fe0 100%
+      );
     z-index: -2;
     pointer-events: none;
   }
-  /* Mørkt overlay så hvit tekst er lesbar oppå */
+  /* Lag 2: lysskjær og dybde */
   body::after {
     content: '';
     position: fixed;
     inset: 0;
-    background: linear-gradient(180deg, rgba(15,41,66,0.72) 0%, rgba(30,77,123,0.78) 100%);
+    background:
+      radial-gradient(ellipse 130% 55% at 50% -5%,  rgba(30, 160, 255, 0.35) 0%, transparent 65%),
+      radial-gradient(ellipse 70%  45% at 90% 100%, rgba(0,  100, 220, 0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 60%  35% at 10% 90%,  rgba(10,  60, 180, 0.20) 0%, transparent 55%);
     z-index: -1;
     pointer-events: none;
   }
