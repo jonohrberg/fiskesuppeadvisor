@@ -654,6 +654,16 @@
   .filter-bar select option { background: #0f2942; }
   #filter-count { font-size: 0.78rem; opacity: 0.55; align-self: center; padding: 4px 0; flex: 0 0 auto; }
 
+  /* ---------- Sorteringsknapper ---------- */
+  .sort-btn {
+    padding: 7px 14px; background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; color: rgba(255,255,255,0.55);
+    cursor: pointer; font-size: 0.85rem; transition: all 0.15s;
+  }
+  .sort-btn:hover { color: white; border-color: rgba(255,255,255,0.4); }
+  .sort-btn.sort-active { background: rgba(255,255,255,0.1); color: white; border-color: rgba(255,255,255,0.4); font-weight: 600; }
+
   /* ---------- Ukens utfordring ---------- */
   .ukens-box {
     background: rgba(255,215,0,0.07);
@@ -836,6 +846,8 @@
 </head>
 <body>
 
+<div id="varsel-bar" style="display:none;background:rgba(74,222,128,0.12);border-bottom:1px solid rgba(74,222,128,0.25);padding:10px 20px;font-size:0.88rem;text-align:center;position:sticky;top:0;z-index:500;"></div>
+
 <header>
   <div class="admin-bar">
     <span id="admin-status"></span>
@@ -873,7 +885,7 @@
       <div class="reviewer-field">
         <label>
           <span class="label-text">Ditt navn</span>
-          <input type="text" name="reviewer_name" placeholder="F.eks. Jon" required>
+          <input type="text" name="reviewer_name" id="reviewer_name_input" placeholder="F.eks. Jon" required onchange="localStorage.setItem('fsa_navn', this.value.trim())">
         </label>
       </div>
 
@@ -920,6 +932,12 @@
     <div id="sotw-box"></div>
 
     <button class="random-btn" onclick="tilfeldigSuppe()">🎲 Gi meg en tilfeldig suppe å dra på!</button>
+
+    <!-- Sortering -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button id="sort-score-btn" onclick="setSortering('score')" class="sort-btn sort-active">🏆 Høyest score</button>
+      <button id="sort-date-btn" onclick="setSortering('date')" class="sort-btn">🕐 Nyeste</button>
+    </div>
 
     <!-- Filter -->
     <div class="filter-bar">
@@ -984,6 +1002,13 @@
     <div id="dagbok-list"></div>
   </section>
 
+  <!-- ===== Kart ===== -->
+  <section>
+    <h2>🗺️ Kart over besøkte restauranter</h2>
+    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;">Alle anmeldte restauranter plottet på kart.</p>
+    <div id="suppe-kart" style="height:380px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);"></div>
+  </section>
+
   <!-- ===== Vil prøve-liste ===== -->
   <section>
     <h2>📋 Vil prøve-liste</h2>
@@ -1004,6 +1029,22 @@
 
 <!-- Stor bilde-visning -->
 <div class="lightbox" id="lightbox"><img id="lightbox-img" alt=""></div>
+
+<!-- Redigerings-modal (admin) -->
+<div class="modal-backdrop" id="edit-modal">
+  <div class="modal" style="max-width:480px;">
+    <h3>Rediger anmeldelse</h3>
+    <div class="error" id="edit-error" style="display:none;"></div>
+    <label><span class="label-text">Restaurant</span><input type="text" id="edit-restaurant"></label>
+    <label style="margin-top:8px;"><span class="label-text">By</span><input type="text" id="edit-city"></label>
+    <label style="margin-top:8px;"><span class="label-text">Dato</span><input type="date" id="edit-date"></label>
+    <label style="margin-top:8px;"><span class="label-text">Kommentar</span><textarea id="edit-comment" rows="3" style="margin-top:4px;"></textarea></label>
+    <div class="modal-buttons" style="margin-top:16px;">
+      <button class="secondary" id="edit-cancel">Avbryt</button>
+      <button class="primary" id="edit-save">Lagre</button>
+    </div>
+  </div>
+</div>
 
 <!-- Innloggings-modal -->
 <div class="modal-backdrop" id="login-modal">
@@ -1062,6 +1103,50 @@
   let isAdmin = false;
   let allReviewsCache = [];
   let honGroups = [];
+  let sortering = 'score'; // 'score' eller 'date'
+
+  function setSortering(type) {
+    sortering = type;
+    document.getElementById('sort-score-btn').classList.toggle('sort-active', type === 'score');
+    document.getElementById('sort-date-btn').classList.toggle('sort-active', type === 'date');
+    renderLeaderboard(allReviewsCache);
+  }
+  window.setSortering = setSortering;
+
+  // ============================================================
+  // IN-APP-VARSLER
+  // ============================================================
+  function sjekkVarsler(reviews) {
+    const mittNavn = localStorage.getItem('fsa_navn');
+    if (!mittNavn) return;
+
+    const sisteBesok = parseInt(localStorage.getItem('fsa_siste_besok') || '0');
+    const naa = Date.now();
+    localStorage.setItem('fsa_siste_besok', naa);
+    if (!sisteBesok) return;
+
+    // Restauranter jeg har anmeldt
+    const mineRestauranter = new Set(
+      reviews
+        .filter(r => (r.reviewer_name||'').toLowerCase().trim() === mittNavn.toLowerCase().trim())
+        .map(r => r.restaurant.trim().toLowerCase() + '|' + r.city.trim().toLowerCase())
+    );
+
+    // Nye anmeldelser (etter siste besøk) av andre, på mine restauranter
+    const nyeVarsler = reviews.filter(r => {
+      const opprettet = new Date(r.created_at).getTime();
+      const erMin = (r.reviewer_name||'').toLowerCase().trim() === mittNavn.toLowerCase().trim();
+      const key = r.restaurant.trim().toLowerCase() + '|' + r.city.trim().toLowerCase();
+      return !erMin && opprettet > sisteBesok && mineRestauranter.has(key);
+    });
+
+    const bar = document.getElementById('varsel-bar');
+    if (nyeVarsler.length === 0) { bar.style.display = 'none'; return; }
+
+    const rester = [...new Set(nyeVarsler.map(r => r.restaurant))].slice(0, 3).join(', ');
+    bar.innerHTML = `🔔 Ny${nyeVarsler.length > 1 ? 'e' : ''} anmeldelse${nyeVarsler.length > 1 ? 'r' : ''} på restauranter du har besøkt: <strong>${rester}</strong> &nbsp;<button onclick="document.getElementById('varsel-bar').style.display='none'" style="background:transparent;border:none;color:inherit;cursor:pointer;font-size:1rem;opacity:0.6;">✕</button>`;
+    bar.style.display = 'block';
+  }
   let honIdx1 = 0, honIdx2 = 1, honVoted = false;
 
   // Normaliser navn: trim whitespace og stor forbokstav
@@ -1399,6 +1484,7 @@
     renderLeaderboard(reviews);
     renderReviewers(reviews);
     renderByLiga(reviews);
+    sjekkVarsler(reviews);
     renderSotW(reviews);
     renderUkensUtfordring();
     initHotOrNot();
@@ -1417,8 +1503,13 @@
       groups[key].reviews.push(r);
     });
 
-    // Sorter grupper etter akkumulert snitt, høyest øverst
+    // Sorter grupper
     const sorted = Object.values(groups).sort((a, b) => {
+      if (sortering === 'date') {
+        const latestA = Math.max(...a.reviews.map(r => new Date(r.created_at || r.date)));
+        const latestB = Math.max(...b.reviews.map(r => new Date(r.created_at || r.date)));
+        return latestB - latestA;
+      }
       const avgA = a.reviews.reduce((s, r) => s + Number(r.average), 0) / a.reviews.length;
       const avgB = b.reviews.reduce((s, r) => s + Number(r.average), 0) / b.reviews.length;
       return avgB - avgA;
@@ -1454,7 +1545,10 @@
             <div class="ind-meta">${formatDate(r.date)}</div>
             ${r.comment ? `<div class="ind-comment">${escapeHtml(r.comment)}</div>` : ''}
             ${r.image_url ? `<img class="review-thumb" style="margin-top:6px;width:70px;height:70px;border-radius:8px;object-fit:cover;cursor:pointer;" src="${r.image_url}" alt="" onclick="openLightbox('${r.image_url}')">` : ''}
-            ${isAdmin ? `<button class="delete-btn" style="margin-top:6px;display:block;" onclick="deleteReview('${r.id}')">Slett</button>` : ''}
+            ${isAdmin ? `<div style="display:flex;gap:6px;margin-top:6px;">
+              <button class="delete-btn" onclick="deleteReview('${r.id}')">Slett</button>
+              <button class="delete-btn" style="border-color:#7dd3fc;color:#7dd3fc;" onclick="openEditModal('${r.id}')">Rediger</button>
+            </div>` : ''}
             <button class="challenge-btn" style="margin-top:6px;" onclick="visSuppeKort('${r.id}')">🎴 Kort</button>
           </div>
           <div>
@@ -1615,6 +1709,55 @@
     renderReviews();
   }
   window.deleteReview = deleteReview;
+
+  // ============================================================
+  // REDIGER ANMELDELSE (admin)
+  // ============================================================
+  let editingId = null;
+
+  function openEditModal(id) {
+    const r = allReviewsCache.find(r => r.id === id);
+    if (!r) return;
+    editingId = id;
+    document.getElementById('edit-restaurant').value = r.restaurant || '';
+    document.getElementById('edit-city').value = r.city || '';
+    document.getElementById('edit-date').value = r.date || '';
+    document.getElementById('edit-comment').value = r.comment || '';
+    document.getElementById('edit-error').style.display = 'none';
+    document.getElementById('edit-modal').classList.add('open');
+  }
+  window.openEditModal = openEditModal;
+
+  document.getElementById('edit-cancel').addEventListener('click', () => {
+    document.getElementById('edit-modal').classList.remove('open');
+  });
+
+  document.getElementById('edit-save').addEventListener('click', async () => {
+    if (!db || !editingId) return;
+    const restaurant = document.getElementById('edit-restaurant').value.trim();
+    const city = document.getElementById('edit-city').value.trim();
+    const date = document.getElementById('edit-date').value;
+    const comment = document.getElementById('edit-comment').value.trim();
+    if (!restaurant || !city || !date) {
+      document.getElementById('edit-error').textContent = 'Restaurant, by og dato er påkrevd.';
+      document.getElementById('edit-error').style.display = 'block';
+      return;
+    }
+    const { error } = await db.from('reviews').update({
+      restaurant: normalizeName(restaurant),
+      city: normalizeName(city),
+      date,
+      comment: comment || null
+    }).eq('id', editingId);
+    if (error) {
+      document.getElementById('edit-error').textContent = 'Feil: ' + error.message;
+      document.getElementById('edit-error').style.display = 'block';
+      return;
+    }
+    document.getElementById('edit-modal').classList.remove('open');
+    editingId = null;
+    renderReviews();
+  });
 
   // ============================================================
   // LAGRE NY ANMELDELSE
@@ -1807,6 +1950,11 @@
   const dateInput = document.querySelector('input[name="date"]');
   if (dateInput) {
     dateInput.value = new Date().toISOString().slice(0, 10);
+    const lagretNavn = localStorage.getItem('fsa_navn');
+    if (lagretNavn) {
+      const navnInput = document.getElementById('reviewer_name_input');
+      if (navnInput) navnInput.value = lagretNavn;
+    }
   }
 
   // Hør på endringer i innlogging (f.eks. om session utløper)
@@ -1819,6 +1967,67 @@
   }
 
   checkAuth();
+
+  // ============================================================
+  // KART (Leaflet + OpenStreetMap)
+  // ============================================================
+  let kartInitiert = false;
+  let kartObj = null;
+
+  async function initKart(reviews) {
+    if (!kartInitiert) {
+      // Last Leaflet CSS og JS
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+      document.head.appendChild(css);
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      kartInitiert = true;
+    }
+
+    if (kartObj) kartObj.remove();
+    kartObj = L.map('suppe-kart').setView([62, 14], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(kartObj);
+
+    // Grupper per by
+    const byer = {};
+    reviews.forEach(r => {
+      const key = r.city.trim().toLowerCase();
+      if (!byer[key]) byer[key] = { city: r.city, reviews: [] };
+      byer[key].reviews.push(r);
+    });
+
+    // Geocode og legg til markører
+    for (const { city, reviews: byRevs } of Object.values(byer)) {
+      try {
+        const resp = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
+        const data = await resp.json();
+        if (!data.length) continue;
+        const { lat, lon } = data[0];
+        const snitt = byRevs.reduce((s, r) => s + Number(r.average), 0) / byRevs.length;
+        const resterHtml = [...new Set(byRevs.map(r => r.restaurant))].map(n => `<b>${n}</b>`).join('<br>');
+        L.marker([lat, lon])
+          .addTo(kartObj)
+          .bindPopup(`<div style="font-size:0.9rem;"><div style="font-weight:bold;margin-bottom:4px;">${city}</div>${resterHtml}<hr style="margin:6px 0;">Snitt: <b>${snitt.toFixed(1).replace('.',',')}⭐</b></div>`);
+      } catch(e) { /* skip hvis geocoding feiler */ }
+    }
+  }
+
+  // Lazy-init kartet når seksjonen scrolles inn i view
+  const kartObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && allReviewsCache.length) {
+      initKart(allReviewsCache);
+      kartObserver.disconnect();
+    }
+  }, { threshold: 0.1 });
+  kartObserver.observe(document.getElementById('suppe-kart'));
   renderReviews();
   renderVilProve();
 
