@@ -826,52 +826,89 @@
 </head>
 <body>
 
+<div id="splash-screen" style="
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(180deg,#020c24 0%,#041a4a 30%,#073080 60%,#0a4db5 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px;text-align:center;
+  transition:opacity 0.5s ease;
+">
+  <div style="font-size:3rem;margin-bottom:8px;">🐟</div>
+  <h1 style="font-size:1.8rem;font-weight:bold;color:white;margin:0 0 6px;">Jons Fiskesuppeadvisor</h1>
+  <p style="color:rgba(255,255,255,0.6);font-style:italic;margin:0 0 40px;font-size:0.95rem;">Welcome to Jon's Fish Soup Advisor</p>
+  <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin-bottom:24px;text-transform:uppercase;letter-spacing:0.1em;">Choose your language</p>
+  <div style="display:flex;gap:24px;justify-content:center;">
+    <button onclick="velgSprak('no')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:20px 28px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+      <div style="font-size:3rem;margin-bottom:8px;">🇳🇴</div>
+      <div style="font-size:0.85rem;opacity:0.8;">Norsk</div>
+    </button>
+    <button onclick="velgSprak('en')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:20px 28px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+      <div style="font-size:3rem;margin-bottom:8px;">🇬🇧</div>
+      <div style="font-size:0.85rem;opacity:0.8;">English</div>
+    </button>
+    <button onclick="velgSprak('hr')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:20px 28px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+      <div style="font-size:3rem;margin-bottom:8px;">🇭🇷</div>
+      <div style="font-size:0.85rem;opacity:0.8;">Hrvatski</div>
+    </button>
+    <button onclick="alert('Did you really think I could be bothered to translate to Japanese? Pick another language, you clown')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:20px 28px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+      <div style="font-size:3rem;margin-bottom:8px;">🇯🇵</div>
+      <div style="font-size:0.85rem;opacity:0.8;">日本語</div>
+    </button>
+  </div>
+</div>
+
 <div id="varsel-bar" style="display:none;background:rgba(74,222,128,0.12);border-bottom:1px solid rgba(74,222,128,0.25);padding:10px 20px;font-size:0.88rem;text-align:center;position:sticky;top:0;z-index:500;"></div>
 
 <header>
+  <button onclick="tilbakeTilStart()" style="position:absolute;top:0;left:0;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.85rem;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">← Hjem</button>
   <div class="admin-bar">
+    <div style="display:flex;gap:4px;margin-right:8px;">
+      <button id="lang-no" onclick="setSprak('no')" style="background:transparent;border:none;cursor:pointer;font-size:1.3rem;padding:2px;opacity:1;" title="Norsk">🇳🇴</button>
+      <button id="lang-en" onclick="setSprak('en')" style="background:transparent;border:none;cursor:pointer;font-size:1.3rem;padding:2px;opacity:0.45;" title="English">🇬🇧</button>
+      <button id="lang-hr" onclick="setSprak('hr')" style="background:transparent;border:none;cursor:pointer;font-size:1.3rem;padding:2px;opacity:0.45;" title="Hrvatski">🇭🇷</button>
+    </div>
     <span id="admin-status"></span>
-    <button class="admin-link" id="admin-toggle">Admin</button>
+    <button class="admin-link" id="admin-toggle" data-i18n="admin">Admin</button>
   </div>
   <h1>🐟 Jons fiskesuppeadvisor <span class="emoji-pair">👴✌️</span></h1>
-  <p>Alt iht. den bibelske skalaen: "thou shalt NOT"</p>
+  <p data-i18n="appSubtitle">Alt iht. den bibelske skalaen: "thou shalt NOT"</p>
 </header>
 
 <main>
 
   <!-- ===== Skjema for ny anmeldelse ===== -->
   <section>
-    <h2>Ny anmeldelse</h2>
+    <h2 data-i18n="nyAnmeldelse">Ny anmeldelse</h2>
     <form id="review-form">
 
       <div class="meta-fields">
         <label>
-          <span class="label-text">Restaurant</span>
+          <span class="label-text" data-i18n="restaurant">Restaurant</span>
           <div class="autocomplete-wrapper">
-            <input type="text" name="restaurant" id="restaurant-input" placeholder="F.eks. Fiskeriet" required autocomplete="off">
+            <input type="text" name="restaurant" id="restaurant-input" data-i18n="restaurantPlaceholder" placeholder="F.eks. Fiskeriet" required autocomplete="off">
             <div class="autocomplete-dropdown" id="ac-dropdown"></div>
           </div>
         </label>
         <label>
-          <span class="label-text">Sted</span>
-          <input type="text" name="city" placeholder="F.eks. Oslo" required>
+          <span class="label-text" data-i18n="sted">Sted</span>
+          <input type="text" name="city" data-i18n="stedPlaceholder" placeholder="F.eks. Oslo" required>
         </label>
         <label>
-          <span class="label-text">Dato</span>
+          <span class="label-text" data-i18n="dato">Dato</span>
           <input type="date" name="date" required>
         </label>
       </div>
 
       <div class="reviewer-field">
         <label>
-          <span class="label-text">Ditt navn</span>
-          <input type="text" name="reviewer_name" id="reviewer_name_input" placeholder="F.eks. Jon" required onchange="localStorage.setItem('fsa_navn', this.value.trim())">
+          <span class="label-text" data-i18n="dittNavn">Ditt navn</span>
+          <input type="text" name="reviewer_name" id="reviewer_name_input" data-i18n="navnPlaceholder" placeholder="F.eks. Jon" required onchange="localStorage.setItem('fsa_navn', this.value.trim())">
         </label>
       </div>
 
       <!-- Bilde-opplasting -->
       <div class="image-upload">
-        <label class="image-upload-label" for="image-input">
+        <label class="image-upload-label" for="image-input" id="bilde-label" data-i18n="bildeTekst">
           📷 Klikk her for å legge til bilde av suppa (valgfritt)
         </label>
         <input type="file" id="image-input" accept="image/*">
@@ -879,31 +916,31 @@
       </div>
 
       <div class="scale-info">
-        <div class="scale-title">De 10 bud</div>
-        Gi karakter 1–6 på hvert bud · <strong>1 = elendig</strong>, <strong>6 = perfekt</strong>
+        <div class="scale-title" data-i18n="de10bud">De 10 bud</div>
+        <span id="skala-info-tekst" data-i18n="skalaInfo">Gi karakter 1–6 på hvert bud · <strong>1 = elendig</strong>, <strong>6 = perfekt</strong></span>
       </div>
 
       <div class="criteria" id="criteria"></div>
 
       <div class="live-score">
-        Terningkast: <span class="score-value" id="live-score">–</span>
+        <span data-i18n="terningkast">Terningkast:</span> <span class="score-value" id="live-score">–</span>
       </div>
 
       <div class="comment-field">
         <label>
-          <span class="label-text">Kommentar <span class="optional">(valgfritt)</span></span>
-          <textarea name="comment" rows="3" maxlength="500" placeholder="Si noen ord om opplevelsen, kelneren, stedet, eller hvilken som helst suppe-historie…"></textarea>
+          <span class="label-text"><span data-i18n="kommentar">Kommentar</span> <span class="optional" data-i18n="valgfritt">(valgfritt)</span></span>
+          <textarea name="comment" rows="3" maxlength="500" data-i18n="kommentarPlaceholder" placeholder="Si noen ord om opplevelsen…"></textarea>
         </label>
       </div>
 
-      <button type="submit" id="submit-btn">Lagre anmeldelse</button>
-      <button type="button" id="reset-btn" onclick="resetForm()" style="width:100%;margin-top:10px;padding:12px;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.2);border-radius:10px;font-size:0.9rem;cursor:pointer;">↺ Nullstill skjema</button>
+      <button type="submit" id="submit-btn" data-i18n="lagreAnmeldelse">Lagre anmeldelse</button>
+      <button type="button" id="reset-btn" onclick="resetForm()" data-i18n="nullstill" style="width:100%;margin-top:10px;padding:12px;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.2);border-radius:10px;font-size:0.9rem;cursor:pointer;">↺ Nullstill skjema</button>
     </form>
   </section>
 
   <!-- ===== Liste over alle anmeldelser ===== -->
   <section>
-    <h2>Alle anmeldelser</h2>
+    <h2 data-i18n="alleAnmeldelser">Alle anmeldelser</h2>
 
     <!-- Ukens utfordring -->
     <div class="ukens-box" id="ukens-box" style="display:none;"></div>
@@ -911,21 +948,21 @@
     <!-- Suppe of the week -->
     <div id="sotw-box"></div>
 
-    <button class="random-btn" onclick="tilfeldigSuppe()">🎲 Gi meg en tilfeldig suppe å dra på!</button>
+    <button class="random-btn" onclick="tilfeldigSuppe()" data-i18n="tilfeldigBtn">🎲 Gi meg en tilfeldig suppe å dra på!</button>
 
     <!-- Sortering -->
     <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button id="sort-score-btn" onclick="setSortering('score')" class="sort-btn">🏆 Høyest score</button>
-      <button id="sort-date-btn" onclick="setSortering('date')" class="sort-btn sort-active">🕐 Nyeste</button>
+      <button id="sort-score-btn" onclick="setSortering('score')" class="sort-btn" data-i18n="hoyestScore">🏆 Høyest score</button>
+      <button id="sort-date-btn" onclick="setSortering('date')" class="sort-btn sort-active" data-i18n="nyeste">🕐 Nyeste</button>
     </div>
 
     <!-- Filter -->
     <div class="filter-bar">
-      <input type="search" id="filter-restaurant" placeholder="🔍 Søk restaurant…" oninput="applyFilters()">
-      <select id="filter-city" onchange="applyFilters()"><option value="">Alle byer</option></select>
-      <select id="filter-reviewer" onchange="applyFilters()"><option value="">Alle anmeldere</option></select>
+      <input type="search" id="filter-restaurant" data-i18n="sokRestaurant" placeholder="🔍 Søk restaurant…" oninput="applyFilters()">
+      <select id="filter-city" onchange="applyFilters()"><option value="" data-i18n="alleByer">Alle byer</option></select>
+      <select id="filter-reviewer" onchange="applyFilters()"><option value="" data-i18n="alleAnmeldere">Alle anmeldere</option></select>
       <select id="filter-minscore" onchange="applyFilters()">
-        <option value="0">Alle scorer</option>
+        <option value="0" data-i18n="alleScorer">Alle scorer</option>
         <option value="3">3,0+ ⭐</option>
         <option value="4">4,0+ ⭐</option>
         <option value="5">5,0+ ⭐</option>
@@ -934,68 +971,68 @@
     </div>
 
     <div id="review-list">
-      <p class="loading">Laster anmeldelser…</p>
+      <p class="loading" data-i18n="lasterAnmeldelser">Laster anmeldelser…</p>
     </div>
   </section>
 
   <!-- ===== Anmeldere – Hall of Fame ===== -->
   <section>
-    <h2>🏅 Anmeldere</h2>
+    <h2 data-i18n="anmeldere">🏅 Anmeldere</h2>
     <div id="reviewer-list">
-      <p class="loading">Laster…</p>
+      <p class="loading" data-i18n="laster">Laster…</p>
     </div>
   </section>
 
   <!-- ===== By-ligaen ===== -->
   <section>
-    <h2>🗺️ By-ligaen</h2>
-    <div id="city-list"><p class="loading">Laster…</p></div>
+    <h2 data-i18n="byLiga">🗺️ By-ligaen</h2>
+    <div id="city-list"><p class="loading" data-i18n="laster">Laster…</p></div>
   </section>
 
   <!-- ===== Hot or Not ===== -->
   <section>
-    <h2>🔥 Hot or Not?</h2>
-    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:14px;">Hvilken av disse to ville du heller spist fiskesuppe på?</p>
-    <div id="hon-container"><p class="empty">Trenger minst 2 restauranter i lista.</p></div>
+    <h2 data-i18n="hotOrNot">🔥 Hot or Not?</h2>
+    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:14px;" data-i18n="hotOrNotDesc">Hvilken av disse to ville du heller spist fiskesuppe på?</p>
+    <div id="hon-container"><p class="empty" data-i18n="honTrenger">Trenger minst 2 restauranter i lista.</p></div>
   </section>
 
   <!-- ===== Suppe-bingo ===== -->
   <section>
-    <h2>🎯 Suppe-bingo</h2>
-    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;">Skriv inn navnet ditt og se hvilke achievements du har låst opp!</p>
+    <h2 data-i18n="suppeBingo">🎯 Suppe-bingo</h2>
+    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;" data-i18n="suppeBingoDesc">Skriv inn navnet ditt og se hvilke achievements du har låst opp!</p>
     <div class="bingo-name-row">
-      <input type="text" id="bingo-name" placeholder="Ditt navn…">
-      <button class="helper-btn" onclick="updateBingo()">Vis bingo</button>
+      <input type="text" id="bingo-name" data-i18n="visNavnPlaceholder" placeholder="Ditt navn…">
+      <button class="helper-btn" onclick="updateBingo()" data-i18n="visBingo">Vis bingo</button>
     </div>
-    <div class="bingo-status" id="bingo-status">Skriv inn navn for å se bingo-brettet ditt.</div>
+    <div class="bingo-status" id="bingo-status" data-i18n="bingoStatus">Skriv inn navn for å se bingo-brettet ditt.</div>
     <div class="bingo-grid" id="bingo-grid"></div>
   </section>
 
   <!-- ===== Fiskedagbok ===== -->
   <section>
-    <h2>📖 Fiskedagbok</h2>
-    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;">Dine suppe-minner i kronologisk rekkefølge.</p>
+    <h2 data-i18n="fiskedagbok">📖 Fiskedagbok</h2>
+    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;" data-i18n="fiskedagbokDesc">Dine suppe-minner i kronologisk rekkefølge.</p>
     <div class="dagbok-header">
-      <input type="text" id="dagbok-name" placeholder="Ditt navn…">
-      <button class="helper-btn" onclick="renderDagbok()">Vis dagbok</button>
+      <input type="text" id="dagbok-name" data-i18n="visNavnPlaceholder" placeholder="Ditt navn…">
+      <button class="helper-btn" onclick="renderDagbok()" data-i18n="visDagbok">Vis dagbok</button>
     </div>
     <div id="dagbok-list"></div>
   </section>
 
   <!-- ===== Kart ===== -->
   <section>
-    <h2>🗺️ Kart over besøkte restauranter</h2>
-    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;">Alle anmeldte restauranter plottet på kart.</p>
+    <h2 data-i18n="kartTittel">🗺️ Kart over besøkte restauranter</h2>
+    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;" data-i18n="kartDesc">Alle anmeldte restauranter plottet på kart.</p>
     <div id="suppe-kart" style="height:380px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);"></div>
   </section>
 
   <!-- ===== Vil prøve-liste ===== -->
   <section>
-    <h2>📋 Vil prøve-liste</h2>
-    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;">Restauranter du vil besøke.</p>
+    <h2 data-i18n="vilProveListe">📋 Vil prøve-liste</h2>
+    <p style="font-size:0.85rem;opacity:0.62;margin-top:-8px;margin-bottom:12px;" data-i18n="vilProveDesc">Restauranter du vil besøke.</p>
     <div class="vp-add">
-      <input type="text" id="vp-input" placeholder="Restaurant + by…" onkeydown="if(event.key==='Enter')addVilProve()">
-      <button onclick="addVilProve()">+ Legg til</button>
+      <input type="text" id="vp-input" data-i18n="vilProvePlaceholder" placeholder="Restaurant + by…" onkeydown="if(event.key==='Enter')addVilProve()">
+      <button onclick="addVilProve()" data-i18n="leggTil">+ Legg til</button>
     </div>
     <div id="vp-list"></div>
   </section>
@@ -1013,15 +1050,15 @@
 <!-- Redigerings-modal (admin) -->
 <div class="modal-backdrop" id="edit-modal">
   <div class="modal" style="max-width:480px;">
-    <h3>Rediger anmeldelse</h3>
+    <h3 data-i18n="redigerAnmeldelse">Rediger anmeldelse</h3>
     <div class="error" id="edit-error" style="display:none;"></div>
-    <label><span class="label-text">Restaurant</span><input type="text" id="edit-restaurant"></label>
-    <label style="margin-top:8px;"><span class="label-text">By</span><input type="text" id="edit-city"></label>
-    <label style="margin-top:8px;"><span class="label-text">Dato</span><input type="date" id="edit-date"></label>
-    <label style="margin-top:8px;"><span class="label-text">Kommentar</span><textarea id="edit-comment" rows="3" style="margin-top:4px;"></textarea></label>
+    <label><span class="label-text" data-i18n="restaurant">Restaurant</span><input type="text" id="edit-restaurant"></label>
+    <label style="margin-top:8px;"><span class="label-text" data-i18n="sted">By</span><input type="text" id="edit-city"></label>
+    <label style="margin-top:8px;"><span class="label-text" data-i18n="dato">Dato</span><input type="date" id="edit-date"></label>
+    <label style="margin-top:8px;"><span class="label-text" data-i18n="kommentar">Kommentar</span><textarea id="edit-comment" rows="3" style="margin-top:4px;"></textarea></label>
     <div class="modal-buttons" style="margin-top:16px;">
-      <button class="secondary" id="edit-cancel">Avbryt</button>
-      <button class="primary" id="edit-save">Lagre</button>
+      <button class="secondary" id="edit-cancel" data-i18n="avbryt">Avbryt</button>
+      <button class="primary" id="edit-save" data-i18n="lagre">Lagre</button>
     </div>
   </div>
 </div>
@@ -1029,7 +1066,7 @@
 <!-- Innloggings-modal -->
 <div class="modal-backdrop" id="login-modal">
   <div class="modal">
-    <h3>Logg inn som admin</h3>
+    <h3 data-i18n="loggInnAdmin">Logg inn som admin</h3>
     <div class="error" id="login-error" style="display:none;"></div>
     <input type="email" id="login-email" placeholder="Email">
     <input type="password" id="login-password" placeholder="Passord">
@@ -1064,18 +1101,411 @@
   // ============================================================
   // DE 10 BUD
   // ============================================================
-  const KRITERIER = [
-    "Passe tykk konsistens (ikke for tynn)",
-    "Passe saltet (ikke for salt)",
-    "Pent kuttede grønnsaker (ikke for lange grønnsaker)",
-    "Variasjon i fiskeslag (minst to typer)",
-    "Servert skikkelig varm (ikke for kald)",
-    "Ferskt brød og ordentlig smør ved siden av (ikke tørt brød, og ikke småpakkesmør)",
-    "Passe stor porsjon (ikke for liten)",
-    "Fri for fiskebein (ingen kjøkkenpinsett ved bordet)",
-    "Saftige fiskebiter (ikke overkokt eller tørre)",
-    "Passe store fiskebiter (ingen kniv nødvendig)"
-  ];
+  // ============================================================
+  // OVERSETTELSER
+  // ============================================================
+  const LANG = {
+    no: {
+      appSubtitle: 'Alt iht. den bibelske skalaen: "thou shalt NOT"',
+      nyAnmeldelse: 'Ny anmeldelse',
+      restaurant: 'Restaurant',
+      restaurantPlaceholder: 'F.eks. Fiskeriet',
+      sted: 'Sted',
+      stedPlaceholder: 'F.eks. Oslo',
+      dato: 'Dato',
+      dittNavn: 'Ditt navn',
+      navnPlaceholder: 'F.eks. Jon',
+      bildeTekst: '📷 Klikk her for å legge til bilde av suppa (valgfritt)',
+      de10bud: 'De 10 bud',
+      skalaInfo: 'Gi karakter 1–6 på hvert bud · <strong>1 = elendig</strong>, <strong>6 = perfekt</strong>',
+      darlig: 'Dårlig',
+      perfekt: 'Perfekt',
+      terningkast: 'Terningkast:',
+      kommentar: 'Kommentar',
+      valgfritt: '(valgfritt)',
+      kommentarPlaceholder: 'Si noen ord om opplevelsen, kelneren, stedet, eller hvilken som helst suppe-historie…',
+      lagreAnmeldelse: 'Lagre anmeldelse',
+      nullstill: '↺ Nullstill skjema',
+      alleAnmeldelser: 'Alle anmeldelser',
+      tilfeldigBtn: '🎲 Gi meg en tilfeldig suppe å dra på!',
+      hoyestScore: '🏆 Høyest score',
+      nyeste: '🕐 Nyeste',
+      sokRestaurant: '🔍 Søk restaurant…',
+      alleByer: 'Alle byer',
+      alleAnmeldere: 'Alle anmeldere',
+      alleScorer: 'Alle scorer',
+      anmeldere: '🏅 Anmeldere',
+      byLiga: '🗺️ By-ligaen',
+      hotOrNot: '🔥 Hot or Not?',
+      hotOrNotDesc: 'Hvilken av disse to ville du heller spist fiskesuppe på?',
+      suppeBingo: '🎯 Suppe-bingo',
+      suppeBingoDesc: 'Skriv inn navnet ditt og se hvilke achievements du har låst opp!',
+      visNavnPlaceholder: 'Ditt navn…',
+      visBingo: 'Vis bingo',
+      bingoStatus: 'Skriv inn navn for å se bingo-brettet ditt.',
+      fiskedagbok: '📖 Fiskedagbok',
+      fiskedagbokDesc: 'Dine suppe-minner i kronologisk rekkefølge.',
+      visDagbok: 'Vis dagbok',
+      vilProveListe: '📋 Vil prøve-liste',
+      vilProveDesc: 'Restauranter du vil besøke.',
+      vilProvePlaceholder: 'Restaurant + by…',
+      leggTil: '+ Legg til',
+      kartTittel: '🗺️ Kart over besøkte restauranter',
+      kartDesc: 'Alle anmeldte restauranter plottet på kart.',
+      lasterAnmeldelser: 'Laster anmeldelser…',
+      laster: 'Laster…',
+      admin: 'Admin',
+      loggInn: 'Logg inn',
+      loggUt: 'Logg ut',
+      innlogget: 'Innlogget',
+      avbryt: 'Avbryt',
+      lagre: 'Lagre',
+      slett: 'Slett',
+      rediger: 'Rediger',
+      anmeldelsekort: '🎴 Kort',
+      utfordre: '⚔️ Utfordre',
+      skjul: '▲ Skjul',
+      vis: '▼ Vis',
+      anmeldelse: 'anmeldelse',
+      anmeldelser: 'anmeldelser',
+      snittAv: 'Snitt av',
+      ingenAnmeldelser: 'Ingen suppeanmeldelser enda. Fyll ut skjemaet over!',
+      ingenAnmeldere: 'Ingen anmeldere enda.',
+      ingenByer: 'Ingen byer enda.',
+      trykkForAaSe: 'Trykk for å se anmeldelser →',
+      suppemesterMaaned: '· Suppemester denne måneden!',
+      rekordHolder: '🥇 {navn} holder rekorden ({score})',
+      filterCount: '{n} restaurant',
+      filterCountFlertall: '{n} restauranter',
+      ingenTreff: 'Ingen treff — prøv å justere filtrene.',
+      mangleKarakter: 'E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!',
+      glemtBilde: 'Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.',
+      glemtKommentar: 'Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.',
+      junkie: 'Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?',
+      lagreUtenBilde: 'OK',
+      serverIkkeTilgjengelig: 'Server ikke tilgjengelig',
+      ikkeFiskesuppe1: 'Nu va du smart. Nu va du VELDIG smart!',
+      ikkeFiskesuppe2: 'Tror du ikke at Æ vesste at du kom tel å være en satans kukunge? Din kuuk. Last opp på nytt jævla kukunge',
+      sjekkBilde: '🔍 Sjekker om dette faktisk er ei fiskesuppe…',
+      perfektSuppe: '🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n{restaurant} fikk terningkast {score}',
+      dårligSuppe: '💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n{restaurant} fikk terningkast {score}',
+      lagret: 'Lagret! {restaurant} fikk terningkast {score}',
+      utfordringTekst: 'Jeg utfordrer deg til å slå min score på {restaurant}, {city} ({score} i terningkast) — klarer du det, din kuk? 🐟\nhttps://fiskesuppeadvisor.vercel.app',
+      utfordringKopiert: 'Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.',
+      tilfeldigAlert: '🎲 Her burde du dra:\n\n{restaurant} — {by}\n\nNu e det ingen unnskyldninga!',
+      ingenSupper: 'Ingen supper i lista enda!',
+      loggInnAdmin: 'Logg inn som admin',
+      emailPlaceholder: 'Email',
+      passordPlaceholder: 'Passord',
+      feilInnlogging: 'Innlogging feilet: ',
+      ikkeAdmin: 'Denne brukeren er ikke admin.',
+      slettBekreft: 'Sikker på at du vil slette denne anmeldelsen?',
+      slettFeil: 'Klarte ikke å slette: ',
+      redigerAnmeldelse: 'Rediger anmeldelse',
+      restaurantPaakrevd: 'Restaurant, by og dato er påkrevd.',
+      varselTekst: '🔔 Ny{e} anmeldelse{r} på restauranter du har besøkt: <strong>{rester}</strong>',
+      suppemesterTittel: 'Suppemester denne måneden',
+      anmeldelserLabel: 'anmeldelser',
+      honTittel: 'Hvilken av disse to ville du heller spist fiskesuppe på?',
+      honTrenger: 'Trenger minst 2 restauranter i lista.',
+    },
+    en: {
+      appSubtitle: 'All according to the biblical scale: "thou shalt NOT"',
+      nyAnmeldelse: 'New Review',
+      restaurant: 'Restaurant',
+      restaurantPlaceholder: 'E.g. The Fishery',
+      sted: 'Location',
+      stedPlaceholder: 'E.g. Oslo',
+      dato: 'Date',
+      dittNavn: 'Your name',
+      navnPlaceholder: 'E.g. Jon',
+      bildeTekst: '📷 Click here to add a photo of the soup (optional)',
+      de10bud: 'The 10 Commandments',
+      skalaInfo: 'Rate 1–6 for each commandment · <strong>1 = terrible</strong>, <strong>6 = perfect</strong>',
+      darlig: 'Bad',
+      perfekt: 'Perfect',
+      terningkast: 'Score:',
+      kommentar: 'Comment',
+      valgfritt: '(optional)',
+      kommentarPlaceholder: 'Say something about the experience, the waiter, the place, or any soup story…',
+      lagreAnmeldelse: 'Save Review',
+      nullstill: '↺ Reset form',
+      alleAnmeldelser: 'All Reviews',
+      tilfeldigBtn: '🎲 Give me a random soup to visit!',
+      hoyestScore: '🏆 Highest score',
+      nyeste: '🕐 Newest',
+      sokRestaurant: '🔍 Search restaurant…',
+      alleByer: 'All cities',
+      alleAnmeldere: 'All reviewers',
+      alleScorer: 'All scores',
+      anmeldere: '🏅 Reviewers',
+      byLiga: '🗺️ City League',
+      hotOrNot: '🔥 Hot or Not?',
+      hotOrNotDesc: 'Which of these two would you rather eat fish soup at?',
+      suppeBingo: '🎯 Soup Bingo',
+      suppeBingoDesc: 'Enter your name and see which achievements you\'ve unlocked!',
+      visNavnPlaceholder: 'Your name…',
+      visBingo: 'Show bingo',
+      bingoStatus: 'Enter your name to see your bingo board.',
+      fiskedagbok: '📖 Fish Diary',
+      fiskedagbokDesc: 'Your soup memories in chronological order.',
+      visDagbok: 'Show diary',
+      vilProveListe: '📋 Want to Try',
+      vilProveDesc: 'Restaurants you want to visit.',
+      vilProvePlaceholder: 'Restaurant + city…',
+      leggTil: '+ Add',
+      kartTittel: '🗺️ Map of Visited Restaurants',
+      kartDesc: 'All reviewed restaurants plotted on a map.',
+      lasterAnmeldelser: 'Loading reviews…',
+      laster: 'Loading…',
+      admin: 'Admin',
+      loggInn: 'Log in',
+      loggUt: 'Log out',
+      innlogget: 'Logged in',
+      avbryt: 'Cancel',
+      lagre: 'Save',
+      slett: 'Delete',
+      rediger: 'Edit',
+      anmeldelsekort: '🎴 Card',
+      utfordre: '⚔️ Challenge',
+      skjul: '▲ Hide',
+      vis: '▼ Show',
+      anmeldelse: 'review',
+      anmeldelser: 'reviews',
+      snittAv: 'Avg of',
+      ingenAnmeldelser: 'No soup reviews yet. Fill out the form above!',
+      ingenAnmeldere: 'No reviewers yet.',
+      ingenByer: 'No cities yet.',
+      trykkForAaSe: 'Tap to see reviews →',
+      suppemesterMaaned: '· Soup Master this month!',
+      rekordHolder: '🥇 {navn} holds the record ({score})',
+      filterCount: '{n} restaurant',
+      filterCountFlertall: '{n} restaurants',
+      ingenTreff: 'No results — try adjusting the filters.',
+      mangleKarakter: 'Are you blind or just plain stupid?\n\nYou must rate all 10 commandments before saving!',
+      glemtBilde: 'Did you forget the photo, you muppet? Are you senile?\n\nPress OK to save without photo, or Cancel to add one.',
+      glemtKommentar: 'Oh so you\'ve decided to REFRAIN from commenting? You conflict-averse little coward\n\nPress OK to save without comment, or Cancel to add one.',
+      junkie: 'Back for more like a junkie, eh? 🐟\n\nYou\'ve already reviewed this restaurant. Add another review anyway?',
+      lagreUtenBilde: 'OK',
+      serverIkkeTilgjengelig: 'Server not available',
+      ikkeFiskesuppe1: 'Oh you\'re smart. You\'re VERY smart!',
+      ikkeFiskesuppe2: 'Did you think I didn\'t know you\'d try this? You idiot. Upload again you bloody fool',
+      sjekkBilde: '🔍 Checking if this is actually a fish soup…',
+      perfektSuppe: '🏆 PERFECT SOUP! You\'ve found the meaning of life!\n\n{restaurant} scored {score}',
+      dårligSuppe: '💀 This was obviously garbage. Hope you demanded your money back, you poor soul\n\n{restaurant} scored {score}',
+      lagret: 'Saved! {restaurant} scored {score}',
+      utfordringTekst: 'I challenge you to beat my score at {restaurant}, {city} ({score}) — can you do it? 🐟\nhttps://fiskesuppeadvisor.vercel.app',
+      utfordringKopiert: 'Challenge copied to clipboard! Paste and send to your friend.',
+      tilfeldigAlert: '🎲 You should go here:\n\n{restaurant} — {by}\n\nNo excuses!',
+      ingenSupper: 'No soups in the list yet!',
+      loggInnAdmin: 'Log in as admin',
+      emailPlaceholder: 'Email',
+      passordPlaceholder: 'Password',
+      feilInnlogging: 'Login failed: ',
+      ikkeAdmin: 'This user is not admin.',
+      slettBekreft: 'Are you sure you want to delete this review?',
+      slettFeil: 'Failed to delete: ',
+      redigerAnmeldelse: 'Edit Review',
+      restaurantPaakrevd: 'Restaurant, city and date are required.',
+      varselTekst: '🔔 New review{r} on restaurants you\'ve visited: <strong>{rester}</strong>',
+      suppemesterTittel: 'Soup Master this month',
+      anmeldelserLabel: 'reviews',
+      honTittel: 'Which of these two would you rather eat fish soup at?',
+      honTrenger: 'Need at least 2 restaurants in the list.',
+    },
+    hr: {
+      appSubtitle: 'Sve prema biblijskoj skali: "thou shalt NOT"',
+      nyAnmeldelse: 'Nova recenzija',
+      restaurant: 'Restoran',
+      restaurantPlaceholder: 'Npr. Ribarska kuća',
+      sted: 'Mjesto',
+      stedPlaceholder: 'Npr. Zagreb',
+      dato: 'Datum',
+      dittNavn: 'Vaše ime',
+      navnPlaceholder: 'Npr. Jon',
+      bildeTekst: '📷 Kliknite ovdje za dodavanje fotografije juhe (neobavezno)',
+      de10bud: '10 zapovijedi',
+      skalaInfo: 'Ocijeni 1–6 za svaku zapovijed · <strong>1 = užasno</strong>, <strong>6 = savršeno</strong>',
+      darlig: 'Loše',
+      perfekt: 'Savršeno',
+      terningkast: 'Ocjena:',
+      kommentar: 'Komentar',
+      valgfritt: '(neobavezno)',
+      kommentarPlaceholder: 'Reci nešto o iskustvu, konobaru, mjestu ili bilo kojoj priči o juhi…',
+      lagreAnmeldelse: 'Spremi recenziju',
+      nullstill: '↺ Resetiraj obrazac',
+      alleAnmeldelser: 'Sve recenzije',
+      tilfeldigBtn: '🎲 Daj mi slučajni restoran za posjetiti!',
+      hoyestScore: '🏆 Najveća ocjena',
+      nyeste: '🕐 Najnovije',
+      sokRestaurant: '🔍 Traži restoran…',
+      alleByer: 'Svi gradovi',
+      alleAnmeldere: 'Svi recenzenti',
+      alleScorer: 'Sve ocjene',
+      anmeldere: '🏅 Recenzenti',
+      byLiga: '🗺️ Gradska liga',
+      hotOrNot: '🔥 Hot or Not?',
+      hotOrNotDesc: 'U kojem od ova dva restorana biste radije pojeli riblju juhu?',
+      suppeBingo: '🎯 Juha Bingo',
+      suppeBingoDesc: 'Unesite svoje ime i vidite koje ste achievemente otključali!',
+      visNavnPlaceholder: 'Vaše ime…',
+      visBingo: 'Prikaži bingo',
+      bingoStatus: 'Unesite ime za prikaz bingo ploče.',
+      fiskedagbok: '📖 Dnevnik juhe',
+      fiskedagbokDesc: 'Vaša juha sjećanja kronološkim redom.',
+      visDagbok: 'Prikaži dnevnik',
+      vilProveListe: '📋 Želim probati',
+      vilProveDesc: 'Restorani koje želite posjetiti.',
+      vilProvePlaceholder: 'Restoran + grad…',
+      leggTil: '+ Dodaj',
+      kartTittel: '🗺️ Karta posjećenih restorana',
+      kartDesc: 'Svi recenzirani restorani prikazani na karti.',
+      lasterAnmeldelser: 'Učitavanje recenzija…',
+      laster: 'Učitavanje…',
+      admin: 'Admin',
+      loggInn: 'Prijava',
+      loggUt: 'Odjava',
+      innlogget: 'Prijavljeni',
+      avbryt: 'Odustani',
+      lagre: 'Spremi',
+      slett: 'Obriši',
+      rediger: 'Uredi',
+      anmeldelsekort: '🎴 Kartica',
+      utfordre: '⚔️ Izazov',
+      skjul: '▲ Sakrij',
+      vis: '▼ Prikaži',
+      anmeldelse: 'recenzija',
+      anmeldelser: 'recenzije',
+      snittAv: 'Prosjek od',
+      ingenAnmeldelser: 'Još nema recenzija juhe. Ispunite gornji obrazac!',
+      ingenAnmeldere: 'Još nema recenzenata.',
+      ingenByer: 'Još nema gradova.',
+      trykkForAaSe: 'Tapnite za prikaz recenzija →',
+      suppemesterMaaned: '· Majstor juhe ovog mjeseca!',
+      rekordHolder: '🥇 {navn} drži rekord ({score})',
+      filterCount: '{n} restoran',
+      filterCountFlertall: '{n} restorana',
+      ingenTreff: 'Nema rezultata — pokušajte prilagoditi filtre.',
+      mangleKarakter: 'Jesi li slijep ili jednostavno glup?\n\nMoraš ocijeniti svih 10 zapovijedi prije spremanja!',
+      glemtBilde: 'Zaboravio si fotografiju, budalo? Jesi li senilan?\n\nPritisni OK za spremanje bez fotografije, ili Odustani za dodavanje.',
+      glemtKommentar: 'Aha, dakle odlučio si se SUZDRŽATI od komentiranja? Ti mali kukavica\n\nPritisni OK za spremanje bez komentara, ili Odustani za dodavanje.',
+      junkie: 'Vratio si se kao ovisnik po još? 🐟\n\nVeć si recenzirao ovaj restoran. Dodati novu recenziju svejedno?',
+      lagreUtenBilde: 'OK',
+      serverIkkeTilgjengelig: 'Server nije dostupan',
+      ikkeFiskesuppe1: 'Oh, pametan si. Jako si PAMETAN!',
+      ikkeFiskesuppe2: 'Misliš da nisam znao da ćeš probati nešto ovako? Idiote. Uploadaj opet, budalo',
+      sjekkBilde: '🔍 Provjera je li ovo zapravo riblja juha…',
+      perfektSuppe: '🏆 SAVRŠENA JUHA! Pronašao si smisao života!\n\n{restaurant} dobio ocjenu {score}',
+      dårligSuppe: '💀 Ovo je očito bila smeće. Nadam se da si tražio povrat novca, jadna dušo\n\n{restaurant} dobio ocjenu {score}',
+      lagret: 'Spremljeno! {restaurant} dobio ocjenu {score}',
+      utfordringTekst: 'Izazivam te da nadmašiš moju ocjenu u {restaurant}, {city} ({score}) — možeš li? 🐟\nhttps://fiskesuppeadvisor.vercel.app',
+      utfordringKopiert: 'Izazov kopiran u međuspremnik! Zalijepi i pošalji prijatelju.',
+      tilfeldigAlert: '🎲 Trebao bi otići ovdje:\n\n{restaurant} — {by}\n\nNema izgovora!',
+      ingenSupper: 'Još nema juha na listi!',
+      loggInnAdmin: 'Prijava kao admin',
+      emailPlaceholder: 'Email',
+      passordPlaceholder: 'Lozinka',
+      feilInnlogging: 'Prijava neuspješna: ',
+      ikkeAdmin: 'Ovaj korisnik nije admin.',
+      slettBekreft: 'Sigurno želite obrisati ovu recenziju?',
+      slettFeil: 'Brisanje neuspješno: ',
+      redigerAnmeldelse: 'Uredi recenziju',
+      restaurantPaakrevd: 'Restoran, grad i datum su obavezni.',
+      varselTekst: '🔔 Nova recenzija{r} na restoranima koje ste posjetili: <strong>{rester}</strong>',
+      suppemesterTittel: 'Majstor juhe ovog mjeseca',
+      anmeldelserLabel: 'recenzije',
+      honTittel: 'U kojem od ova dva restorana biste radije pojeli riblju juhu?',
+      honTrenger: 'Potrebna su najmanje 2 restorana na listi.',
+    }
+  };
+
+  let aktivtSprak = localStorage.getItem('fsa_sprak') || 'no';
+  // Splash vises alltid ved oppstart
+  function t(key) { return LANG[aktivtSprak][key] || LANG.no[key] || key; }
+
+  function velgSprak(sprak) {
+    const splash = document.getElementById('splash-screen');
+    splash.style.opacity = '0';
+    setTimeout(() => splash.style.display = 'none', 500);
+    setSprak(sprak);
+  }
+
+  function tilbakeTilStart() {
+    const splash = document.getElementById('splash-screen');
+    splash.style.display = 'flex';
+    setTimeout(() => splash.style.opacity = '1', 10);
+  }
+  window.tilbakeTilStart = tilbakeTilStart;
+  window.velgSprak = velgSprak;
+
+  function setSprak(sprak) {
+    aktivtSprak = sprak;
+    localStorage.setItem('fsa_sprak', sprak);
+    oppdaterStatiskTekst();
+    byggKriterier();
+    if (allReviewsCache.length) renderReviews();
+  }
+  window.setSprak = setSprak;
+
+  function oppdaterStatiskTekst() {
+    // Header
+    document.querySelector('header p').innerHTML = t('appSubtitle');
+    // Skjema
+    document.querySelector('#review-form h2') && (document.querySelector('section h2').textContent = t('nyAnmeldelse'));
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.dataset.i18n;
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = t(key);
+      } else {
+        el.innerHTML = t(key);
+      }
+    });
+    // Flaggknapper
+    ['no','en','hr'].forEach(l => {
+      const btn = document.getElementById(`lang-${l}`);
+      if (btn) btn.style.opacity = l === aktivtSprak ? '1' : '0.45';
+    });
+  }
+
+  const KRITERIER_LANG = {
+    no: [
+      "Passe tykk konsistens (ikke for tynn)",
+      "Passe saltet (ikke for salt)",
+      "Pent kuttede grønnsaker (ikke for lange grønnsaker)",
+      "Variasjon i fiskeslag (minst to typer)",
+      "Servert skikkelig varm (ikke for kald)",
+      "Ferskt brød og ordentlig smør ved siden av (ikke tørt brød, og ikke småpakkesmør)",
+      "Passe stor porsjon (ikke for liten)",
+      "Fri for fiskebein (ingen kjøkkenpinsett ved bordet)",
+      "Saftige fiskebiter (ikke overkokt eller tørre)",
+      "Passe store fiskebiter (ingen kniv nødvendig)"
+    ],
+    en: [
+      "Right consistency (not too thin)",
+      "Right saltiness (not too salty)",
+      "Nicely cut vegetables (not too long)",
+      "Variety of fish (at least two types)",
+      "Served properly hot (not too cold)",
+      "Fresh bread and proper butter on the side (no dry bread, no single-serve butter)",
+      "Right portion size (not too small)",
+      "Free of fish bones (no tweezers at the table)",
+      "Juicy fish pieces (not overcooked or dry)",
+      "Right size fish pieces (no knife needed)"
+    ],
+    hr: [
+      "Prava konzistencija (nije previše rijetka)",
+      "Pravo soljenje (nije previše slano)",
+      "Lijepo narezano povrće (nije previše dugo)",
+      "Raznolikost ribe (najmanje dvije vrste)",
+      "Poslužena dovoljno vruća (nije previše hladna)",
+      "Svježi kruh i pravi maslac uz juhu (bez suhog kruha i malih paketa maslaca)",
+      "Prava veličina porcije (nije premala)",
+      "Bez riblje kosti (bez pincete za kosti za stolom)",
+      "Sočni komadi ribe (nisu prekuhani ili suhi)",
+      "Prava veličina komada ribe (nije potreban nož)"
+    ]
+  };
+  function getKriterier() { return KRITERIER_LANG[aktivtSprak] || KRITERIER_LANG.no; }
 
   let currentRatings = {};
   let currentImageBlob = null;
@@ -1299,30 +1729,34 @@
   // BYGG KRITERIE-RADENE
   // ============================================================
   const criteriaEl = document.getElementById('criteria');
-  KRITERIER.forEach((name, idx) => {
-    const row = document.createElement('div');
-    row.className = 'criterion';
-    row.innerHTML = `
-      <div class="criterion-name">${idx + 1}. ${name}</div>
-      <div class="rating-buttons" data-idx="${idx}">
-        <span class="scale-end">Dårlig</span>
-        ${[1,2,3,4,5,6].map(n => `<button type="button" data-value="${n}">${n}</button>`).join('')}
-        <span class="scale-end">Perfekt</span>
-      </div>
-    `;
-    criteriaEl.appendChild(row);
-  });
-
-  document.querySelectorAll('.rating-buttons').forEach(group => {
-    group.addEventListener('click', (e) => {
-      if (e.target.tagName !== 'BUTTON') return;
-      const idx = group.dataset.idx;
-      currentRatings[idx] = parseInt(e.target.dataset.value);
-      group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
-      e.target.classList.add('selected');
-      updateLiveScore();
+  function byggKriterier() {
+    criteriaEl.innerHTML = '';
+    getKriterier().forEach((name, idx) => {
+      const row = document.createElement('div');
+      row.className = 'criterion';
+      row.innerHTML = `
+        <div class="criterion-name">${idx + 1}. ${name}</div>
+        <div class="rating-buttons" data-idx="${idx}">
+          <span class="scale-end">${t('darlig')}</span>
+          ${[1,2,3,4,5,6].map(n => `<button type="button" data-value="${n}"${currentRatings[idx] === n ? ' class="selected"' : ''}>${n}</button>`).join('')}
+          <span class="scale-end">${t('perfekt')}</span>
+        </div>
+      `;
+      criteriaEl.appendChild(row);
     });
-  });
+    // Re-attach click handlers
+    criteriaEl.querySelectorAll('.rating-buttons').forEach(group => {
+      group.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        const idx = group.dataset.idx;
+        currentRatings[idx] = parseInt(e.target.dataset.value);
+        group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+        e.target.classList.add('selected');
+        updateLiveScore();
+      });
+    });
+  }
+  byggKriterier();
 
   function resetForm() {
     document.getElementById('review-form').reset();
@@ -1357,7 +1791,7 @@
         // Vis midlertidig forhåndsvisning mens vi sjekker
         imagePreview.innerHTML = `
           <img id="check-img" src="${previewUrl}" alt="" style="max-width:100%;max-height:200px;border-radius:10px;opacity:0.6;">
-          <p style="text-align:center;font-size:0.85rem;opacity:0.7;margin-top:8px;">🔍 Sjekker om dette faktisk er ei fiskesuppe…</p>
+          <p style="text-align:center;font-size:0.85rem;opacity:0.7;margin-top:8px;">${t('sjekkBilde')}</p>
         `;
 
         // Vent til bildet er lastet inn i DOM
@@ -1371,8 +1805,8 @@
           imagePreview.innerHTML = `
             <div style="padding:18px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:10px;text-align:center;">
               <div style="font-size:1.6rem;margin-bottom:8px;">😏</div>
-              <p style="font-weight:bold;margin:0 0 6px;font-size:1rem;">Nu va du smart. Nu va du VELDIG smart!</p>
-              <p style="font-size:0.85rem;opacity:0.75;margin:0;">Tror du ikke at Æ vesste at du kom tel å være en satans kukunge? Din kuuk. Last opp på nytt jævla kukunge</p>
+              <p style="font-weight:bold;margin:0 0 6px;font-size:1rem;">${t('ikkeFiskesuppe1')}</p>
+              <p style="font-size:0.85rem;opacity:0.75;margin:0;">${t('ikkeFiskesuppe2')}</p>
             </div>
           `;
           return;
@@ -1638,10 +2072,10 @@
 
   function tilfeldigSuppe() {
     const kort = document.querySelectorAll('.restaurant-name');
-    if (kort.length === 0) { alert('Ingen supper i lista enda!'); return; }
+    if (kort.length === 0) { alert(t('ingenSupper')); return; }
     const valgt = kort[Math.floor(Math.random() * kort.length)];
     const by = valgt.closest('.restaurant-header').querySelector('.restaurant-meta').textContent;
-    alert(`🎲 Her burde du dra:\n\n${valgt.textContent} — ${by}\n\nNu e det ingen unnskyldninga!`);
+    alert(t('tilfeldigAlert').replace('{restaurant}', valgt.textContent).replace('{by}', by));
   }
   window.tilfeldigSuppe = tilfeldigSuppe;
 
@@ -1656,12 +2090,12 @@
   window.filtrerPaAnmelder = filtrerPaAnmelder;
 
   async function utfordring(restaurant, city, score) {
-    const tekst = `Jeg utfordrer deg til å slå min score på ${restaurant}, ${city} (${String(score).replace('.',',')} i terningkast) — klarer du det, din kuk? 🐟\nhttps://fiskesuppeadvisor.vercel.app`;
+    const tekst = t('utfordringTekst').replace('{restaurant}', restaurant).replace('{city}', city).replace('{score}', String(score).replace('.',','));
     if (navigator.share) {
       try { await navigator.share({ text: tekst }); return; } catch(e) {}
     }
     navigator.clipboard.writeText(tekst).then(() =>
-      alert('Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.')
+      alert(t('utfordringKopiert'))
     ).catch(() => alert(tekst));
   }
   window.utfordring = utfordring;
@@ -1693,10 +2127,10 @@
   }
 
   async function deleteReview(id) {
-    if (!db) { alert('Server ikke tilgjengelig'); return; }
-    if (!confirm('Sikker på at du vil slette denne anmeldelsen?')) return;
+    if (!db) { alert(t('serverIkkeTilgjengelig')); return; }
+    if (!confirm(t('slettBekreft'))) return;
     const { error } = await db.from('reviews').delete().eq('id', id);
-    if (error) { alert('Klarte ikke å slette: ' + error.message); return; }
+    if (error) { alert(t('slettFeil') + error.message); return; }
     renderReviews();
   }
   window.deleteReview = deleteReview;
@@ -1761,33 +2195,33 @@
       return;
     }
 
-    if (Object.keys(currentRatings).length < KRITERIER.length) {
-      alert('E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!');
+    if (Object.keys(currentRatings).length < getKriterier().length) {
+      alert(t('mangleKarakter'));
       return;
     }
 
     // Påminnelse om bilde mangler (valgfritt, men spør)
     if (!currentImageBlob) {
-      const fortsett = confirm('Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.');
+      const fortsett = confirm(t('glemtBilde'));
       if (!fortsett) return;
     }
 
     // Påminnelse om kommentar mangler (valgfritt, men spør)
     const kommentarVerdi = (document.querySelector('textarea[name="comment"]').value || '').trim();
     if (!kommentarVerdi) {
-      const fortsett2 = confirm('Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.');
+      const fortsett2 = confirm(t('glemtKommentar'));
       if (!fortsett2) return;
     }
 
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Lagrer…';
+    submitBtn.textContent = t('lagreAnmeldelse') + '…';
 
     try {
       // Last opp bilde først hvis det finnes
       let imageUrl = null;
       if (currentImageBlob) {
-        submitBtn.textContent = 'Laster opp bilde…';
+        submitBtn.textContent = t('laster');
         const filename = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
         const { error: uploadErr } = await db.storage
           .from('soup-images')
@@ -1809,8 +2243,8 @@
         .ilike('reviewer_name', normalizeName(formData.get('reviewer_name')))
         .limit(1);
       if (existing && existing.length > 0) {
-        const junkie = confirm('Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?');
-        if (!junkie) { submitBtn.disabled = false; submitBtn.textContent = 'Lagre anmeldelse'; return; }
+        const junkie = confirm(t('junkie'));
+        if (!junkie) { submitBtn.disabled = false; submitBtn.textContent = t('lagreAnmeldelse'); return; }
       }
 
       const commentValue = (formData.get('comment') || '').trim();
@@ -1837,21 +2271,23 @@
 
       // Score-baserte meldinger og animasjoner
       playSlurpSound();
+      const score = average.toFixed(1).replace('.', ',');
+      const rest = formData.get('restaurant');
       if (average >= 6.0) {
         showConfetti();
-        setTimeout(() => alert(`🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`), 400);
+        setTimeout(() => alert(t('perfektSuppe').replace('{restaurant}', rest).replace('{score}', score)), 400);
       } else if (average < 2.0) {
-        alert(`💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+        alert(t('dårligSuppe').replace('{restaurant}', rest).replace('{score}', score));
       } else {
         showFishParticles();
-        alert(`Lagret! ${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+        alert(t('lagret').replace('{restaurant}', rest).replace('{score}', score));
       }
     } catch (err) {
       alert('Noe gikk galt: ' + err.message);
       console.error(err);
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Lagre anmeldelse';
+      submitBtn.textContent = t('lagreAnmeldelse');
     }
   });
 
@@ -1958,6 +2394,14 @@
   }
 
   checkAuth();
+
+  // Sett riktig språk ved oppstart
+  oppdaterStatiskTekst();
+  // Oppdater flaggknapper
+  ['no','en','hr'].forEach(l => {
+    const btn = document.getElementById(`lang-${l}`);
+    if (btn) btn.style.opacity = l === aktivtSprak ? '1' : '0.45';
+  });
 
   // ============================================================
   // KART (Leaflet + OpenStreetMap)
