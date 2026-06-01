@@ -48,15 +48,43 @@
     try {
       const model = await loadMobileNet();
       const predictions = await model.classify(imgEl, 10);
-      const matOrd = ['soup', 'bowl', 'broth', 'stew', 'chowder', 'bisque',
-                      'caldron', 'consomme', 'pot', 'ladle', 'food', 'dish',
-                      'meal', 'plate', 'fish', 'seafood', 'sauce', 'gravy'];
+
+      // Åpenbare ikke-mat-ting som MobileNet er god til å gjenkjenne
+      const ikkeMatOrd = [
+        'keyboard', 'laptop', 'computer', 'monitor', 'screen', 'mouse',
+        'phone', 'remote', 'calculator', 'typewriter', 'space bar',
+        'television', 'radio', 'printer', 'scanner', 'projector',
+        'car', 'truck', 'bicycle', 'airplane', 'boat', 'train',
+        'chair', 'table', 'desk', 'sofa', 'bed', 'shelf',
+        'dog', 'cat', 'bird', 'horse', 'cow', 'sheep',
+        'tree', 'grass', 'mountain', 'building', 'street',
+        'book', 'paper', 'pen', 'pencil', 'scissors',
+        'bottle', 'can', 'bucket'
+      ];
+
+      // Hvis topp-prediksjonen med høy konfidens er noe åpenbart ikke-mat, avvis
+      const top = predictions[0];
+      const topLabel = top.className.toLowerCase();
+      if (top.probability > 0.4 && ikkeMatOrd.some(w => topLabel.includes(w))) {
+        return false;
+      }
+
+      // Spesifikke mat/suppe-ord — ingen generiske som 'dish', 'plate', 'food'
+      const matOrd = [
+        'soup', 'broth', 'stew', 'chowder', 'bisque', 'consomme',
+        'caldron', 'ladle', 'fish', 'seafood', 'shrimp', 'salmon',
+        'cod', 'tuna', 'shellfish', 'clam', 'lobster', 'crab',
+        'bowl of', 'cream of', 'chowder', 'bisque'
+      ];
+
+      // Krev at minst ett treff har >3% konfidens
       return predictions.some(p =>
+        p.probability > 0.03 &&
         matOrd.some(w => p.className.toLowerCase().includes(w))
       );
     } catch (e) {
       console.warn('Bildesjekk feilet, slipper gjennom:', e);
-      return true; // la det gå gjennom hvis modellen krasjer
+      return true;
     }
   }
 </script>
@@ -877,6 +905,7 @@
       </div>
 
       <button type="submit" id="submit-btn">Lagre anmeldelse</button>
+      <button type="button" id="reset-btn" onclick="resetForm()" style="width:100%;margin-top:10px;padding:12px;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.2);border-radius:10px;font-size:0.9rem;cursor:pointer;">↺ Nullstill skjema</button>
     </form>
   </section>
 
@@ -1229,6 +1258,16 @@
       updateLiveScore();
     });
   });
+
+  function resetForm() {
+    document.getElementById('review-form').reset();
+    currentRatings = {};
+    clearImage();
+    document.querySelectorAll('.rating-buttons button.selected')
+      .forEach(b => b.classList.remove('selected'));
+    updateLiveScore();
+  }
+  window.resetForm = resetForm;
 
   function updateLiveScore() {
     const values = Object.values(currentRatings);
