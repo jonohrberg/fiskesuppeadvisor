@@ -49,7 +49,7 @@
       const model = await loadMobileNet();
       const predictions = await model.classify(imgEl, 10);
 
-      // Åpenbare ikke-mat-ting som MobileNet er god til å gjenkjenne
+      // Sjekk ALLE topp-10 prediksjoner mot ikke-mat-listen (lavere terskel)
       const ikkeMatOrd = [
         'keyboard', 'laptop', 'computer', 'monitor', 'screen', 'mouse',
         'phone', 'remote', 'calculator', 'typewriter', 'space bar',
@@ -59,27 +59,27 @@
         'dog', 'cat', 'bird', 'horse', 'cow', 'sheep',
         'tree', 'grass', 'mountain', 'building', 'street',
         'book', 'paper', 'pen', 'pencil', 'scissors',
-        'bottle', 'can', 'bucket'
+        'hand', 'finger', 'face', 'person', 'selfie',
+        'bottle', 'can', 'bucket', 'glass', 'cup', 'mug'
       ];
 
-      // Hvis topp-prediksjonen med høy konfidens er noe åpenbart ikke-mat, avvis
-      const top = predictions[0];
-      const topLabel = top.className.toLowerCase();
-      if (top.probability > 0.4 && ikkeMatOrd.some(w => topLabel.includes(w))) {
-        return false;
-      }
+      // Avvis hvis NOEN av topp-10 treffer ikke-mat med >10% konfidens
+      const harIkkeMat = predictions.some(p =>
+        p.probability > 0.10 &&
+        ikkeMatOrd.some(w => p.className.toLowerCase().includes(w))
+      );
+      if (harIkkeMat) return false;
 
-      // Spesifikke mat/suppe-ord — ingen generiske som 'dish', 'plate', 'food'
+      // Krev positiv identifikasjon av mat/suppe — minst én prediksjon >5%
       const matOrd = [
         'soup', 'broth', 'stew', 'chowder', 'bisque', 'consomme',
         'caldron', 'ladle', 'fish', 'seafood', 'shrimp', 'salmon',
         'cod', 'tuna', 'shellfish', 'clam', 'lobster', 'crab',
-        'bowl of', 'cream of', 'chowder', 'bisque'
+        'bowl', 'gravy', 'sauce', 'cream of'
       ];
 
-      // Krev at minst ett treff har >3% konfidens
       return predictions.some(p =>
-        p.probability > 0.03 &&
+        p.probability > 0.05 &&
         matOrd.some(w => p.className.toLowerCase().includes(w))
       );
     } catch (e) {
@@ -935,8 +935,8 @@
 
     <!-- Sortering -->
     <div style="display:flex;gap:6px;margin-bottom:12px;">
-      <button id="sort-score-btn" onclick="setSortering('score')" class="sort-btn sort-active">🏆 Høyest score</button>
-      <button id="sort-date-btn" onclick="setSortering('date')" class="sort-btn">🕐 Nyeste</button>
+      <button id="sort-score-btn" onclick="setSortering('score')" class="sort-btn">🏆 Høyest score</button>
+      <button id="sort-date-btn" onclick="setSortering('date')" class="sort-btn sort-active">🕐 Nyeste</button>
     </div>
 
     <!-- Filter -->
@@ -1103,7 +1103,7 @@
   let isAdmin = false;
   let allReviewsCache = [];
   let honGroups = [];
-  let sortering = 'score'; // 'score' eller 'date'
+  let sortering = 'date'; // 'score' eller 'date'
 
   function setSortering(type) {
     sortering = type;
@@ -1638,7 +1638,7 @@
         suppemester.toLowerCase().trim() === name.toLowerCase().trim();
 
       return `
-        <div class="reviewer-card">
+        <div class="reviewer-card" onclick="filtrerPaAnmelder('${escapeHtml(name)}')" style="cursor:pointer;" title="Vis anmeldelser av ${escapeHtml(name)}">
           <div class="reviewer-card-top">
             <div>
               <div class="reviewer-card-name">${isSuppemester ? '👑 ' : ''}${escapeHtml(name)}</div>
@@ -1650,6 +1650,7 @@
             </div>
           </div>
           ${achievementsHtml}
+          <div style="font-size:0.75rem;opacity:0.4;margin-top:6px;">Trykk for å se anmeldelser →</div>
         </div>
       `;
     }).join('');
@@ -1663,6 +1664,16 @@
     alert(`🎲 Her burde du dra:\n\n${valgt.textContent} — ${by}\n\nNu e det ingen unnskyldninga!`);
   }
   window.tilfeldigSuppe = tilfeldigSuppe;
+
+  function filtrerPaAnmelder(navn) {
+    const select = document.getElementById('filter-reviewer');
+    if (select) {
+      select.value = navn;
+      applyFilters();
+    }
+    document.getElementById('review-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  window.filtrerPaAnmelder = filtrerPaAnmelder;
 
   async function utfordring(restaurant, city, score) {
     const tekst = `Jeg utfordrer deg til å slå min score på ${restaurant}, ${city} (${String(score).replace('.',',')} i terningkast) — klarer du det, din kuk? 🐟\nhttps://fiskesuppeadvisor.vercel.app`;
