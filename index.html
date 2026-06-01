@@ -16,72 +16,52 @@
 <!-- Supabase JS-bibliotek (gjør at vi kan snakke med databasen vår) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- TensorFlow.js + MobileNet for bildegjenkjenning (lastes kun ved behov) -->
+<!-- Bildesjekk via HuggingFace food-classifier -->
 <script>
-  let tfLoaded = false;
-  let mnModel = null;
-
-  async function loadMobileNet() {
-    if (mnModel) return mnModel;
-    if (!tfLoaded) {
-      await Promise.all([
-        new Promise((res, rej) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.2.0/dist/tf.min.js';
-          s.onload = res; s.onerror = rej;
-          document.head.appendChild(s);
-        }),
-        new Promise((res, rej) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js';
-          s.onload = res; s.onerror = rej;
-          document.head.appendChild(s);
-        })
-      ]);
-      tfLoaded = true;
-    }
-    mnModel = await mobilenet.load({ version: 2, alpha: 0.5 });
-    return mnModel;
-  }
+  const HF_TOKEN = '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';
 
   async function erDetteEiFiskesuppe(imgEl) {
     try {
-      const model = await loadMobileNet();
-      const predictions = await model.classify(imgEl, 10);
+      // Konverter bilde til base64
+      const canvas = document.createElement('canvas');
+      canvas.width = imgEl.naturalWidth || imgEl.width;
+      canvas.height = imgEl.naturalHeight || imgEl.height;
+      canvas.getContext('2d').drawImage(imgEl, 0, 0);
+      const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
 
-      // Sjekk ALLE topp-10 prediksjoner mot ikke-mat-listen (lavere terskel)
-      const ikkeMatOrd = [
-        'keyboard', 'laptop', 'computer', 'monitor', 'screen', 'mouse',
-        'phone', 'remote', 'calculator', 'typewriter', 'space bar',
-        'television', 'radio', 'printer', 'scanner', 'projector',
-        'car', 'truck', 'bicycle', 'airplane', 'boat', 'train',
-        'chair', 'table', 'desk', 'sofa', 'bed', 'shelf',
-        'dog', 'cat', 'bird', 'horse', 'cow', 'sheep',
-        'tree', 'grass', 'mountain', 'building', 'street',
-        'book', 'paper', 'pen', 'pencil', 'scissors',
-        'hand', 'finger', 'face', 'person', 'selfie',
-        'bottle', 'can', 'bucket', 'glass', 'cup', 'mug'
-      ];
-
-      // Avvis hvis NOEN av topp-10 treffer ikke-mat med >10% konfidens
-      const harIkkeMat = predictions.some(p =>
-        p.probability > 0.10 &&
-        ikkeMatOrd.some(w => p.className.toLowerCase().includes(w))
+      // CLIP: zero-shot klassifisering — "er dette mat" vs "er dette ikke mat"
+      const response = await fetch(
+        'https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${HF_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            inputs: { image: base64 },
+            parameters: {
+              candidate_labels: [
+                'a bowl of soup or seafood dish',
+                'a keyboard, laptop, phone or electronic device'
+              ]
+            }
+          })
+        }
       );
-      if (harIkkeMat) return false;
 
-      // Krev positiv identifikasjon av mat/suppe — minst én prediksjon >5%
-      const matOrd = [
-        'soup', 'broth', 'stew', 'chowder', 'bisque', 'consomme',
-        'caldron', 'ladle', 'fish', 'seafood', 'shrimp', 'salmon',
-        'cod', 'tuna', 'shellfish', 'clam', 'lobster', 'crab',
-        'bowl', 'gravy', 'sauce', 'cream of'
-      ];
+      if (!response.ok) {
+        console.warn('HF API feilet, slipper gjennom');
+        return true;
+      }
 
-      return predictions.some(p =>
-        p.probability > 0.05 &&
-        matOrd.some(w => p.className.toLowerCase().includes(w))
-      );
+      const results = await response.json();
+      if (!Array.isArray(results) || results.length === 0) return true;
+
+      // Godkjenn kun hvis "mat"-labelen vinner
+      const matLabel = results.find(r => r.label.includes('soup'));
+      return matLabel && matLabel.score > 0.5;
+
     } catch (e) {
       console.warn('Bildesjekk feilet, slipper gjennom:', e);
       return true;
