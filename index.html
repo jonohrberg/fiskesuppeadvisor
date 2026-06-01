@@ -1467,7 +1467,7 @@
 
       return `
         <div class="restaurant-card">
-          <div class="restaurant-header">
+          <div class="restaurant-header" onclick="toggleReviews(${gi})" style="cursor:pointer;">
             <div>
               <div class="restaurant-rank">#${gi + 1}</div>
               <div class="restaurant-name">${escapeHtml(g.restaurant)}</div>
@@ -1476,15 +1476,17 @@
                 const best = g.reviews.reduce((a, b) => Number(a.average) > Number(b.average) ? a : b);
                 return `🥇 ${escapeHtml(best.reviewer_name||'Anonym')} holder rekorden (${Number(best.average).toFixed(1).replace('.',',')})`;
               })()}</div>
-              <button class="toggle-btn" id="toggle-btn-${gi}" onclick="toggleReviews(${gi})">▼ Vis ${countText}</button>
-              <button class="challenge-btn" onclick="utfordring('${escapeHtml(g.restaurant)}','${escapeHtml(g.city)}',${accAvg.toFixed(1)})">⚔️ Utfordre</button>
+              <span onclick="event.stopPropagation()">
+                <button class="toggle-btn" id="toggle-btn-${gi}">${isAdmin ? '▲ Skjul' : '▼ Vis'} ${countText}</button>
+                <button class="challenge-btn" onclick="utfordring('${escapeHtml(g.restaurant)}','${escapeHtml(g.city)}',${accAvg.toFixed(1)})">⚔️ Utfordre</button>
+              </span>
             </div>
             <div class="restaurant-score-block">
               <div class="restaurant-score">${accAvg.toFixed(1).replace('.', ',')}</div>
               <div class="restaurant-score-label">${count > 1 ? `Snitt av ${count}` : 'Terningkast'}</div>
             </div>
           </div>
-          <div class="individual-reviews" id="ind-reviews-${gi}">
+          <div class="individual-reviews${isAdmin ? ' open' : ''}" id="ind-reviews-${gi}">
             ${individualHtml}
           </div>
         </div>
