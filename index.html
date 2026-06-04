@@ -16,76 +16,59 @@
 <!-- Supabase JS-bibliotek (gjør at vi kan snakke med databasen vår) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- TensorFlow.js + MobileNet for bildegjenkjenning (lastes kun ved behov) -->
+<!-- Bildesjekk: fargeanalyse direkte i nettleseren, ingen ekstern avhengighet -->
 <script>
-  let tfLoaded = false;
-  let mnModel = null;
+  function erDetteEiFiskesuppe(imgEl) {
+    return new Promise((resolve) => {
+      try {
+        const canvas = document.createElement('canvas');
+        const SIZE = 100; // nedskalér for ytelse
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imgEl, 0, 0, SIZE, SIZE);
+        const { data } = ctx.getImageData(0, 0, SIZE, SIZE);
 
-  async function loadMobileNet() {
-    if (mnModel) return mnModel;
-    if (!tfLoaded) {
-      await Promise.all([
-        new Promise((res, rej) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.2.0/dist/tf.min.js';
-          s.onload = res; s.onerror = rej;
-          document.head.appendChild(s);
-        }),
-        new Promise((res, rej) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js';
-          s.onload = res; s.onerror = rej;
-          document.head.appendChild(s);
-        })
-      ]);
-      tfLoaded = true;
-    }
-    mnModel = await mobilenet.load({ version: 2, alpha: 0.5 });
-    return mnModel;
-  }
+        let varmMatFarger = 0;
+        let kaldIkkeMatFarger = 0;
+        let totalt = 0;
 
-  async function erDetteEiFiskesuppe(imgEl) {
-    try {
-      const model = await loadMobileNet();
-      const predictions = await model.classify(imgEl, 10);
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+          if (a < 128) continue; // hopp over gjennomsiktige piksler
+          totalt++;
 
-      // Åpenbare ikke-mat-ting som MobileNet er god til å gjenkjenne
-      const ikkeMatOrd = [
-        'keyboard', 'laptop', 'computer', 'monitor', 'screen', 'mouse',
-        'phone', 'remote', 'calculator', 'typewriter', 'space bar',
-        'television', 'radio', 'printer', 'scanner', 'projector',
-        'car', 'truck', 'bicycle', 'airplane', 'boat', 'train',
-        'chair', 'table', 'desk', 'sofa', 'bed', 'shelf',
-        'dog', 'cat', 'bird', 'horse', 'cow', 'sheep',
-        'tree', 'grass', 'mountain', 'building', 'street',
-        'book', 'paper', 'pen', 'pencil', 'scissors',
-        'bottle', 'can', 'bucket' // disse er ikke suppe
-      ];
+          // Varme matfarger: kremete, oransje, brun, gulaktig, rødaktig
+          const erKrem    = r > 180 && g > 160 && b > 120 && r >= g && g >= b;
+          const erOransje = r > 150 && g > 80  && b < 120 && r > g && r > b;
+          const erBrun    = r > 100 && r < 200 && g > 50  && g < 160 && b < 100 && r > g;
+          const erGul     = r > 160 && g > 140 && b < 110 && r > b && g > b;
+          const erRod     = r > 150 && g < 110 && b < 110 && r > g && r > b;
 
-      // Hvis topp-prediksjonen med høy konfidens er noe åpenbart ikke-mat, avvis
-      const top = predictions[0];
-      const topLabel = top.className.toLowerCase();
-      if (top.probability > 0.4 && ikkeMatOrd.some(w => topLabel.includes(w))) {
-        return false;
+          // Kalde ikke-matfarger: grå elektronikk, blå/svart bakgrunn
+          const erGraa    = Math.abs(r - g) < 25 && Math.abs(r - b) < 25 && Math.abs(g - b) < 25;
+          const erBlaaGraa = b > r - 10 && b > g - 10 && r < 160;
+          const erMorkGraa = r < 80 && g < 80 && b < 80;
+
+          if (erKrem || erOransje || erBrun || erGul || erRod) varmMatFarger++;
+          if (erGraa || erBlaaGraa || erMorkGraa) kaldIkkeMatFarger++;
+        }
+
+        if (totalt === 0) { resolve(false); return; }
+
+        const varmAndel = varmMatFarger / totalt;
+        const kaldAndel = kaldIkkeMatFarger / totalt;
+
+        console.log(`Bildesjekk: varm=${(varmAndel*100).toFixed(1)}%, kald=${(kaldAndel*100).toFixed(1)}%`);
+
+        // Godkjenn dersom minst 20% av bildet er varme matfarger
+        // OG kalde ikke-matfarger dominerer ikke (< 60%)
+        resolve(varmAndel >= 0.20 && kaldAndel < 0.60);
+      } catch (e) {
+        console.error('Bildesjekk feilet:', e);
+        resolve(false);
       }
-
-      // Spesifikke mat/suppe-ord — ingen generiske som 'dish', 'plate', 'food'
-      const matOrd = [
-        'soup', 'broth', 'stew', 'chowder', 'bisque', 'consomme',
-        'caldron', 'ladle', 'fish', 'seafood', 'shrimp', 'salmon',
-        'cod', 'tuna', 'shellfish', 'clam', 'lobster', 'crab',
-        'bowl of', 'cream of', 'chowder', 'bisque'
-      ];
-
-      // Krev at minst ett treff har >3% konfidens
-      return predictions.some(p =>
-        p.probability > 0.03 &&
-        matOrd.some(w => p.className.toLowerCase().includes(w))
-      );
-    } catch (e) {
-      console.warn('Bildesjekk feilet, slipper gjennom:', e);
-      return true;
-    }
+    });
   }
 </script>
 
@@ -2361,4 +2344,4 @@
 </script>
 
 </body>
-</html>
+</html>                                                                                                                                                                                                                                                                                                                                                                                                              
