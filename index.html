@@ -38,19 +38,24 @@
           if (a < 128) continue; // hopp over gjennomsiktige piksler
           totalt++;
 
-          // Varme matfarger: kremete, oransje, brun, gulaktig, rødaktig
-          const erKrem    = r > 180 && g > 160 && b > 120 && r >= g && g >= b;
-          const erOransje = r > 150 && g > 80  && b < 120 && r > g && r > b;
-          const erBrun    = r > 100 && r < 200 && g > 50  && g < 160 && b < 100 && r > g;
-          const erGul     = r > 160 && g > 140 && b < 110 && r > b && g > b;
-          const erRod     = r > 150 && g < 110 && b < 110 && r > g && r > b;
+          // Nær-hvit/papir: kvittering, vegg, papir — skal IKKE telle som mat
+          const erNaerHvit = r > 210 && g > 205 && b > 185;
+          if (erNaerHvit) { totalt++; continue; }
+
+          // Varme matfarger: kremete (men ikke hvit), oransje, brun, gulaktig, rødaktig
+          const erKrem    = r > 170 && r < 230 && g > 140 && g < 210 && b > 100 && b < 175 && r >= g && g >= b && (r - b) > 30;
+          const erOransje = r > 150 && g > 80  && b < 120 && r > g && r > b && (r - b) > 40;
+          const erBrun    = r > 100 && r < 200 && g > 50  && g < 160 && b < 100 && r > g && (r - b) > 30;
+          const erGul     = r > 160 && g > 140 && b < 110 && r > b && g > b && (r - b) > 50;
+          const erRod     = r > 150 && g < 110 && b < 110 && r > g && r > b && (r - g) > 40;
 
           // Kalde ikke-matfarger: grå elektronikk, blå/svart bakgrunn
-          const erGraa    = Math.abs(r - g) < 25 && Math.abs(r - b) < 25 && Math.abs(g - b) < 25;
+          const erGraa     = Math.abs(r - g) < 25 && Math.abs(r - b) < 25 && Math.abs(g - b) < 25;
           const erBlaaGraa = b > r - 10 && b > g - 10 && r < 160;
           const erMorkGraa = r < 80 && g < 80 && b < 80;
 
           if (erKrem || erOransje || erBrun || erGul || erRod) varmMatFarger++;
+          if (erOransje || erBrun) varmMatFarger++; // dobbel vekt for klare matfarger
           if (erGraa || erBlaaGraa || erMorkGraa) kaldIkkeMatFarger++;
         }
 
@@ -61,9 +66,8 @@
 
         console.log(`Bildesjekk: varm=${(varmAndel*100).toFixed(1)}%, kald=${(kaldAndel*100).toFixed(1)}%`);
 
-        // Godkjenn dersom minst 20% av bildet er varme matfarger
-        // OG kalde ikke-matfarger dominerer ikke (< 60%)
-        resolve(varmAndel >= 0.20 && kaldAndel < 0.60);
+        // Krev minst 25% varme matfarger OG at kalde ikke dominerer
+        resolve(varmAndel >= 0.25 && kaldAndel < 0.55);
       } catch (e) {
         console.error('Bildesjekk feilet:', e);
         resolve(false);
@@ -819,7 +823,33 @@
 </head>
 <body>
 
+<div id="splash-screen" style="
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(180deg,#020c24 0%,#041a4a 30%,#073080 60%,#0a4db5 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px;text-align:center;
+  transition:opacity 0.5s ease;
+">
+  <div style="font-size:3rem;margin-bottom:8px;">🐟</div>
+  <h1 style="font-size:1.8rem;font-weight:bold;color:white;margin:0 0 6px;">Jons Fiskesuppeadvisor</h1>
+  <p style="color:rgba(255,255,255,0.6);font-style:italic;margin:0 0 40px;font-size:0.95rem;">Welcome to Jon's Fish Soup Advisor</p>
+  <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin-bottom:24px;text-transform:uppercase;letter-spacing:0.1em;">Choose your language</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:380px;width:100%;">
+    <button onclick="velgSprak('no')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇳🇴</div><div style="font-size:0.8rem;opacity:0.8;">Norsk</div></button>
+    <button onclick="velgSprak('en')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇬🇧</div><div style="font-size:0.8rem;opacity:0.8;">English</div></button>
+    <button onclick="velgSprak('hr')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇭🇷</div><div style="font-size:0.8rem;opacity:0.8;">Hrvatski</div></button>
+    <button onclick="alert('Did you really think I could be bothered to translate to Japanese? Pick another language, you clown')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇯🇵</div><div style="font-size:0.8rem;opacity:0.8;">日本語</div></button>
+    <button onclick="velgSprak('sq')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇽🇰</div><div style="font-size:0.8rem;opacity:0.8;">Shqip</div></button>
+    <button onclick="velgSprak('da')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇩🇰</div><div style="font-size:0.8rem;opacity:0.8;">Dansk</div></button>
+    <button onclick="velgSprak('de')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇩🇪</div><div style="font-size:0.8rem;opacity:0.8;">Deutsch</div></button>
+    <button onclick="velgSprak('es')" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:16px 8px;cursor:pointer;color:white;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'"><div style="font-size:2.4rem;margin-bottom:6px;">🇪🇸</div><div style="font-size:0.8rem;opacity:0.8;">Español</div></button>
+  </div>
+</div>
+
+<div id="varsel-bar" style="display:none;background:rgba(74,222,128,0.12);border-bottom:1px solid rgba(74,222,128,0.25);padding:10px 20px;font-size:0.88rem;text-align:center;position:sticky;top:0;z-index:500;"></div>
+
 <header>
+  <button onclick="tilbakeTilStart()" style="position:absolute;top:0;left:0;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:0.85rem;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">← Hjem</button>
   <div class="admin-bar">
     <span id="admin-status"></span>
     <button class="admin-link" id="admin-toggle">Admin</button>
@@ -1472,7 +1502,7 @@
                 return `🥇 ${escapeHtml(best.reviewer_name||'Anonym')} holder rekorden (${Number(best.average).toFixed(1).replace('.',',')})`;
               })()}</div>
               <span onclick="event.stopPropagation()">
-                <button class="toggle-btn" id="toggle-btn-${gi}">${isAdmin ? '▲ Skjul' : '▼ Vis'} ${countText}</button>
+                <button class="toggle-btn" id="toggle-btn-${gi}" onclick="toggleReviews(${gi})">${isAdmin ? '▲ Skjul' : '▼ Vis'} ${countText}</button>
                 <button class="challenge-btn" onclick="utfordring('${escapeHtml(g.restaurant)}','${escapeHtml(g.city)}',${accAvg.toFixed(1)})">⚔️ Utfordre</button>
               </span>
             </div>
@@ -1811,6 +1841,29 @@
       updateAdminUI();
       renderReviews();
     });
+  }
+
+  // ============================================================
+  // SPRÅKVALG OG SPLASH-SKJERM
+  // ============================================================
+  function velgSprak(sprak) {
+    const splash = document.getElementById('splash-screen');
+    splash.style.opacity = '0';
+    setTimeout(() => { splash.style.display = 'none'; }, 500);
+    localStorage.setItem('fsa_sprak', sprak);
+  }
+  function tilbakeTilStart() {
+    const splash = document.getElementById('splash-screen');
+    splash.style.display = 'flex';
+    setTimeout(() => { splash.style.opacity = '1'; }, 10);
+  }
+  window.velgSprak = velgSprak;
+  window.tilbakeTilStart = tilbakeTilStart;
+
+  // Hopp over splash hvis språk allerede er valgt
+  if (localStorage.getItem('fsa_sprak')) {
+    const splash = document.getElementById('splash-screen');
+    if (splash) splash.style.display = 'none';
   }
 
   checkAuth();
@@ -2344,4 +2397,4 @@
 </script>
 
 </body>
-</html>                                                                                                                                                                                                                                                                                                                                                                                                              
+</html>            
