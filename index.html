@@ -475,6 +475,14 @@
     border-radius: 12px;
     padding: 14px 16px;
     margin-bottom: 10px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .reviewer-card:hover {
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.18);
+  }
+  .reviewer-card:active {
+    background: rgba(255,255,255,0.15);
   }
   .reviewer-card-top {
     display: flex;
@@ -953,7 +961,9 @@
         <option value="5">5,0+ ⭐</option>
       </select>
       <span id="filter-count"></span>
+      <button id="filter-reset-btn" onclick="resetFilters()" style="display:none; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:#fff; border-radius:20px; padding:4px 12px; font-size:0.85rem; cursor:pointer;">✕ Nullstill filter</button>
     </div>
+    <div id="active-filter-chip" style="margin-bottom:8px; display:none;"></div>
 
     <div id="review-list">
       <p class="loading">Laster anmeldelser…</p>
@@ -1578,7 +1588,7 @@
         suppemester.toLowerCase().trim() === name.toLowerCase().trim();
 
       return `
-        <div class="reviewer-card">
+        <div class="reviewer-card" style="cursor:pointer;" onclick="filterByReviewer(${JSON.stringify(name)})">
           <div class="reviewer-card-top">
             <div>
               <div class="reviewer-card-name">${isSuppemester ? '👑 ' : ''}${escapeHtml(name)}</div>
@@ -3036,21 +3046,68 @@
     if (minScore) filtered = filtered.filter(r => Number(r.average) >= minScore);
 
     renderLeaderboard(filtered);
+    updateFilterUI(city, reviewer, q, minScore);
   }
   window.applyFilters = applyFilters;
 
+  function updateFilterUI(city, reviewer, q, minScore) {
+    const chipEl = document.getElementById('active-filter-chip');
+    const resetBtn = document.getElementById('filter-reset-btn');
+    const hasFilter = city || reviewer || q || minScore > 0;
+    if (!chipEl || !resetBtn) return;
+
+    if (!hasFilter) {
+      chipEl.style.display = 'none';
+      chipEl.innerHTML = '';
+      resetBtn.style.display = 'none';
+      return;
+    }
+
+    resetBtn.style.display = 'inline-block';
+    const chips = [];
+    if (city) chips.push(`🗺️ ${city.charAt(0).toUpperCase() + city.slice(1)}`);
+    if (reviewer) chips.push(`🏅 ${reviewer.charAt(0).toUpperCase() + reviewer.slice(1)}`);
+    if (q) chips.push(`🔍 "${q}"`);
+    if (minScore > 0) chips.push(`⭐ ${String(minScore).replace('.',',')}+`);
+
+    chipEl.style.display = 'flex';
+    chipEl.style.flexWrap = 'wrap';
+    chipEl.style.gap = '6px';
+    chipEl.innerHTML = chips.map(c =>
+      `<span style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:3px 10px; font-size:0.82rem; color:#fff;">${c}</span>`
+    ).join('');
+  }
+
+  function resetFilters() {
+    const r = document.getElementById('filter-restaurant');
+    const c = document.getElementById('filter-city');
+    const v = document.getElementById('filter-reviewer');
+    const s = document.getElementById('filter-minscore');
+    if (r) r.value = '';
+    if (c) c.value = '';
+    if (v) v.value = '';
+    if (s) s.value = '0';
+    applyFilters();
+  }
+  window.resetFilters = resetFilters;
+
   function filterByCity(cityName) {
     const cityEl = document.getElementById('filter-city');
-    if (cityEl) {
-      cityEl.value = cityName.toLowerCase();
-    }
+    if (cityEl) cityEl.value = cityName.toLowerCase();
     applyFilters();
-    const leaderboard = document.getElementById('leaderboard') || document.querySelector('.leaderboard-section') || document.querySelector('section');
-    // Scroll to the top review section / filter bar
     const filterBar = document.querySelector('.filter-bar');
     if (filterBar) filterBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   window.filterByCity = filterByCity;
+
+  function filterByReviewer(reviewerName) {
+    const revEl = document.getElementById('filter-reviewer');
+    if (revEl) revEl.value = reviewerName.toLowerCase();
+    applyFilters();
+    const filterBar = document.querySelector('.filter-bar');
+    if (filterBar) filterBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  window.filterByReviewer = filterByReviewer;
 
   // ============================================================
   // UKENS UTFORDRING
