@@ -131,6 +131,7 @@
     text-align: center;
     margin-bottom: 32px;
     position: relative;
+    padding-top: 40px;
   }
   header h1 { margin: 0 0 8px; font-size: 2rem; }
   .emoji-pair { letter-spacing: -0.2em; }
@@ -1056,7 +1057,7 @@
   // ============================================================
   // DE 10 BUD
   // ============================================================
-  const KRITERIER = [
+  const KRITERIER_NO = [
     "Passe tykk konsistens (ikke for tynn)",
     "Passe saltet (ikke for salt)",
     "Pent kuttede grønnsaker (ikke for lange grønnsaker)",
@@ -1138,7 +1139,8 @@
       (r.reviewer_name || '').toLowerCase().trim() === name.toLowerCase().trim()
     );
     const count = mine.length;
-    const rank = RANKS.find(r => count >= r.min) || RANKS[RANKS.length - 1];
+    const ranks = (T.ranks && T.ranks.length) ? T.ranks : RANKS;
+    const rank = ranks.find(r => count >= r.min) || ranks[ranks.length - 1];
     const cities = new Set(mine.map(r => (r.city || '').trim().toLowerCase()));
 
     const latestDate = mine.reduce((latest, r) => {
@@ -1157,19 +1159,20 @@
       });
     const isPioneer = Object.values(firstReviewers).includes(name.toLowerCase().trim());
 
+    const ach = (T.achievements) || {};
     const achievements = [];
     if (isPioneer)
-      achievements.push({ emoji: '🥇', name: 'Pioneren',          desc: 'Første til å anmelde en restaurant' });
+      achievements.push({ emoji: '🥇', name: (ach.pioner||{}).name||'Pioneren',          desc: (ach.pioner||{}).desc||'Første til å anmelde en restaurant' });
     if (mine.some(r => Number(r.average) >= 5.5))
-      achievements.push({ emoji: '🏆', name: 'Gourmeten',         desc: 'Gitt terningkast 5,5 eller høyere' });
+      achievements.push({ emoji: '🏆', name: (ach.gourmet||{}).name||'Gourmeten',         desc: (ach.gourmet||{}).desc||'Gitt terningkast 5,5 eller høyere' });
     if (mine.some(r => Number(r.average) <= 3.0))
-      achievements.push({ emoji: '🦀', name: 'Kresen',            desc: 'Gitt terningkast 3,0 eller lavere' });
+      achievements.push({ emoji: '🦀', name: (ach.kresen||{}).name||'Kresen',             desc: (ach.kresen||{}).desc||'Gitt terningkast 3,0 eller lavere' });
     if (cities.size >= 3)
-      achievements.push({ emoji: '🗺️', name: 'Eventyreren',       desc: 'Anmeldt i 3 eller flere byer' });
+      achievements.push({ emoji: '🗺️', name: (ach.eventyrer||{}).name||'Eventyreren',    desc: (ach.eventyrer||{}).desc||'Anmeldt i 3 eller flere byer' });
     if (daysSince <= 30)
-      achievements.push({ emoji: '🔥', name: 'På strek',          desc: 'Anmeldt noe siste 30 dager' });
+      achievements.push({ emoji: '🔥', name: (ach.paastrek||{}).name||'På strek',         desc: (ach.paastrek||{}).desc||'Anmeldt noe siste 30 dager' });
     if (count >= 5)
-      achievements.push({ emoji: '📚', name: 'Ivrig anmelder', desc: '5 eller flere anmeldelser' });
+      achievements.push({ emoji: '📚', name: (ach.ivrig||{}).name||'Ivrig anmelder',      desc: (ach.ivrig||{}).desc||'5 eller flere anmeldelser' });
 
     // Vendetta: har gitt minst 1,5 poeng lavere enn en kompis på samme restaurant
     const hasVendetta = mine.some(r => {
@@ -1181,7 +1184,7 @@
       );
     });
     if (hasVendetta)
-      achievements.push({ emoji: '🗡️', name: 'Vendetta', desc: 'Har gitt mye lavere score enn en kompis på samme restaurant' });
+      achievements.push({ emoji: '🗡️', name: (ach.vendetta||{}).name||'Vendetta', desc: (ach.vendetta||{}).desc||'Har gitt mye lavere score enn en kompis på samme restaurant' });
 
     return { count, rank, achievements, citiesCount: cities.size };
   }
@@ -1247,7 +1250,7 @@
   // BYGG KRITERIE-RADENE
   // ============================================================
   const criteriaEl = document.getElementById('criteria');
-  KRITERIER.forEach((name, idx) => {
+  KRITERIER_NO.forEach((name, idx) => {
     const row = document.createElement('div');
     row.className = 'criterion';
     row.innerHTML = `
@@ -1306,8 +1309,8 @@
         imagePreview.innerHTML = `
           <img id="check-img" src="${previewUrl}" alt="Forhåndsvisning" style="max-width:100%;max-height:240px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);">
           <div style="display:flex;gap:10px;margin-top:10px;justify-content:center;">
-            <button type="button" id="confirm-image" style="padding:8px 20px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;font-weight:bold;">✅ Godkjenn</button>
-            <button type="button" id="retake-image" style="padding:8px 20px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-size:0.9rem;cursor:pointer;">📷 Ta bilde på nytt</button>
+            <button type="button" id="confirm-image" style="padding:8px 20px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;font-weight:bold;">${T.godkjenn||'✅ Godkjenn'}</button>
+            <button type="button" id="retake-image" style="padding:8px 20px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;font-size:0.9rem;cursor:pointer;">${T.taBildeOmIgjen||'📷 Ta bilde på nytt'}</button>
           </div>
         `;
 
@@ -1318,7 +1321,7 @@
 
         document.getElementById('confirm-image').addEventListener('click', async () => {
           // Erstatt knapper med lastemelding
-          imagePreview.querySelector('div').innerHTML = `<p style="text-align:center;font-size:0.85rem;opacity:0.7;margin:10px 0 0;">🔍 Sjekker om dette faktisk er ei fiskesuppe…</p>`;
+          imagePreview.querySelector('div').innerHTML = `<p style="text-align:center;font-size:0.85rem;opacity:0.7;margin:10px 0 0;">${T.sjekkerBilde||'🔍 Sjekker om dette faktisk er ei fiskesuppe…'}</p>`;
 
           const checkImg = document.getElementById('check-img');
           await new Promise(res => { checkImg.complete ? res() : checkImg.addEventListener('load', res); });
@@ -1329,9 +1332,9 @@
             clearImage();
             imagePreview.innerHTML = `
               <div style="padding:18px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:10px;text-align:center;">
-                <div style="font-size:1.6rem;margin-bottom:8px;">😏</div>
-                <p style="font-weight:bold;margin:0 0 6px;font-size:1rem;">Nu va du smart. Nu va du VELDIG smart!</p>
-                <p style="font-size:0.85rem;opacity:0.75;margin:0;">Tror du ikke at Æ vesste at du kom tel å være en satans kukunge? Din kuuk. Last opp på nytt jævla kukunge</p>
+                <div style="font-size:1.6rem;margin-bottom:8px;">👹</div>
+                <p style="font-weight:bold;margin:0 0 6px;font-size:1rem;">${T.ikkeSuppeTittel||'Nu va du smart. Nu va du VELDIG smart!'}</p>
+                <p style="font-size:0.85rem;opacity:0.75;margin:0;">${T.ikkeSuppeInfo||'Tror du ikke at Æ vesste at du kom tel å være en satans kukunge? Din kuuk. Last opp på nytt jævla kukunge'}</p>
               </div>
             `;
             return;
@@ -1342,7 +1345,7 @@
           currentImageUrl = previewUrl;
           imagePreview.innerHTML = `
             <img src="${previewUrl}" alt="Forhåndsvisning" style="max-width:100%;max-height:240px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);">
-            <br><button type="button" class="remove-image" id="remove-image">Fjern bilde</button>
+            <br><button type="button" class="remove-image" id="remove-image">${T.fjernBilde||'Fjern bilde'}</button>
           `;
           document.getElementById('remove-image').addEventListener('click', clearImage);
         });
@@ -1463,7 +1466,7 @@
     listEl.innerHTML = sorted.map((g, gi) => {
       const accAvg = g.reviews.reduce((s, r) => s + Number(r.average), 0) / g.reviews.length;
       const count = g.reviews.length;
-      const countText = count === 1 ? '1 anmeldelse' : `${count} anmeldelser`;
+      const countText = count === 1 ? (T.anmeldelse1 || '1 anmeldelse') : (T.anmeldelseN ? T.anmeldelseN(count) : `${count} anmeldelser`);
 
       // Sorter enkeltanmeldelsene nyeste først
       const sortedReviews = [...g.reviews].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1479,8 +1482,8 @@
             <div class="ind-meta">${formatDate(r.date)}</div>
             ${r.comment ? `<div class="ind-comment">${escapeHtml(r.comment)}</div>` : ''}
             ${r.image_url ? `<img class="review-thumb" style="margin-top:6px;width:70px;height:70px;border-radius:8px;object-fit:cover;cursor:pointer;" src="${r.image_url}" alt="" onclick="openLightbox('${r.image_url}')">` : ''}
-            ${isAdmin ? `<button class="delete-btn" style="margin-top:6px;display:block;" onclick="deleteReview('${r.id}')">Slett</button>` : ''}
-            <button class="challenge-btn" style="margin-top:6px;" onclick="visSuppeKort('${r.id}')">🎴 Kort</button>
+            ${isAdmin ? `<button class="delete-btn" style="margin-top:6px;display:block;" onclick="deleteReview('${r.id}')">${T.slettKnapp||'Slett'}</button>` : ''}
+            <button class="challenge-btn" style="margin-top:6px;" onclick="visSuppeKort('${r.id}')">${T.kortKnapp||'🎴 Kort'}</button>
           </div>
           <div>
             <div class="ind-score">${Number(r.average).toFixed(1).replace('.', ',')}</div>
@@ -1499,16 +1502,16 @@
               <div class="restaurant-meta">${escapeHtml(g.city)}</div>
               <div class="restaurant-record">${(() => {
                 const best = g.reviews.reduce((a, b) => Number(a.average) > Number(b.average) ? a : b);
-                return `🥇 ${escapeHtml(best.reviewer_name||'Anonym')} holder rekorden (${Number(best.average).toFixed(1).replace('.',',')})`;
+                return `🥇 ${escapeHtml(best.reviewer_name||'Anonym')} ${T.holderRekorden || 'holder rekorden'} (${Number(best.average).toFixed(1).replace('.',',')})`;
               })()}</div>
               <span onclick="event.stopPropagation()">
-                <button class="toggle-btn" id="toggle-btn-${gi}" onclick="toggleReviews(${gi})">${isAdmin ? '▲ Skjul' : '▼ Vis'} ${countText}</button>
-                <button class="challenge-btn" onclick="utfordring('${escapeHtml(g.restaurant)}','${escapeHtml(g.city)}',${accAvg.toFixed(1)})">⚔️ Utfordre</button>
+                <button class="toggle-btn" id="toggle-btn-${gi}" onclick="toggleReviews(${gi})">${isAdmin ? '▲ ' + (T.skjul || 'Skjul') : '▼ ' + (T.vis || 'Vis')} ${countText}</button>
+                <button class="challenge-btn" onclick="utfordring('${escapeHtml(g.restaurant)}','${escapeHtml(g.city)}',${accAvg.toFixed(1)})">${T.utfordreKnapp||'⚔️ Utfordre'}</button>
               </span>
             </div>
             <div class="restaurant-score-block">
               <div class="restaurant-score">${accAvg.toFixed(1).replace('.', ',')}</div>
-              <div class="restaurant-score-label">${count > 1 ? `Snitt av ${count}` : 'Terningkast'}</div>
+              <div class="restaurant-score-label">${count > 1 ? `${T.snittAv || 'Snitt av'} ${count}` : (T.terningkastLabel || 'Terningkast')}</div>
             </div>
           </div>
           <div class="individual-reviews${isAdmin ? ' open' : ''}" id="ind-reviews-${gi}">
@@ -1556,7 +1559,7 @@
       .sort((a, b) => b.stats.count - a.stats.count);
 
     listEl.innerHTML = ranked.map(({ name, stats }) => {
-      const countText = stats.count === 1 ? '1 anmeldelse' : `${stats.count} anmeldelser`;
+      const countText = stats.count === 1 ? (T.anmeldelse1 || '1 anmeldelse') : (T.anmeldelseN ? T.anmeldelseN(stats.count) : `${stats.count} anmeldelser`);
       const achievementsHtml = stats.achievements.length > 0
         ? `<div class="reviewer-achievements">
             ${stats.achievements.map(a =>
@@ -1573,7 +1576,7 @@
           <div class="reviewer-card-top">
             <div>
               <div class="reviewer-card-name">${isSuppemester ? '👑 ' : ''}${escapeHtml(name)}</div>
-              <div class="reviewer-card-rank">${stats.rank.emoji} ${stats.rank.title}${isSuppemester ? ' · Suppemester denne måneden!' : ''}</div>
+              <div class="reviewer-card-rank">${stats.rank.emoji} ${stats.rank.title}${isSuppemester ? ' · ' + (T.suppemesterManed || 'Suppemester denne måneden!') : ''}</div>
             </div>
             <div style="text-align:right;">
               <div class="reviewer-card-count">${stats.count}</div>
@@ -1588,20 +1591,23 @@
 
   function tilfeldigSuppe() {
     const kort = document.querySelectorAll('.restaurant-name');
-    if (kort.length === 0) { alert('Ingen supper i lista enda!'); return; }
+    if (kort.length === 0) { alert(T.ingenAnmeldelser||'Ingen supper i lista enda!'); return; }
     const valgt = kort[Math.floor(Math.random() * kort.length)];
     const by = valgt.closest('.restaurant-header').querySelector('.restaurant-meta').textContent;
-    alert(`🎲 Her burde du dra:\n\n${valgt.textContent} — ${by}\n\nNu e det ingen unnskyldninga!`);
+    const msg = T.tilfeldigAlert ? T.tilfeldigAlert(valgt.textContent, by) : `🎲 Her burde du dra:\n\n${valgt.textContent} — ${by}\n\nNu e det ingen unnskyldninga!`;
+    alert(msg);
   }
   window.tilfeldigSuppe = tilfeldigSuppe;
 
   async function utfordring(restaurant, city, score) {
-    const tekst = `Jeg utfordrer deg til å slå min score på ${restaurant}, ${city} (${String(score).replace('.',',')} i terningkast) — klarer du det, din kuk? 🐟\nhttps://fiskesuppeadvisor.vercel.app`;
+    const tekst = T.utfordringTekst
+      ? T.utfordringTekst(restaurant, city, String(score).replace('.',','))
+      : `Jeg utfordrer deg til å slå min score på ${restaurant}, ${city} (${String(score).replace('.',',')} i terningkast) — klarer du det, din kuk? 🐟\nhttps://fiskesuppeadvisor.vercel.app`;
     if (navigator.share) {
       try { await navigator.share({ text: tekst }); return; } catch(e) {}
     }
     navigator.clipboard.writeText(tekst).then(() =>
-      alert('Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.')
+      alert(T.utfordringKopiert||'Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.')
     ).catch(() => alert(tekst));
   }
   window.utfordring = utfordring;
@@ -1613,10 +1619,10 @@
     const countText = count === 1 ? '1 anmeldelse' : `${count} anmeldelser`;
     if (section.classList.contains('open')) {
       section.classList.remove('open');
-      btn.textContent = `▼ Vis ${countText}`;
+      btn.textContent = `▼ ${T.vis || 'Vis'} ${countText}`;
     } else {
       section.classList.add('open');
-      btn.textContent = `▲ Skjul ${countText}`;
+      btn.textContent = `▲ ${T.skjul || 'Skjul'} ${countText}`;
     }
   }
   window.toggleReviews = toggleReviews;
@@ -1634,7 +1640,7 @@
 
   async function deleteReview(id) {
     if (!db) { alert('Server ikke tilgjengelig'); return; }
-    if (!confirm('Sikker på at du vil slette denne anmeldelsen?')) return;
+    if (!confirm(T.slettBekreft||'Sikker på at du vil slette denne anmeldelsen?')) return;
     const { error } = await db.from('reviews').delete().eq('id', id);
     if (error) { alert('Klarte ikke å slette: ' + error.message); return; }
     renderReviews();
@@ -1653,32 +1659,32 @@
     }
 
     if (Object.keys(currentRatings).length < KRITERIER.length) {
-      alert('E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!');
+      alert(T.alleKriterier||'E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!');
       return;
     }
 
     // Påminnelse om bilde mangler (valgfritt, men spør)
     if (!currentImageBlob) {
-      const fortsett = confirm('Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.');
+      const fortsett = confirm(T.glemtBilde||'Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.');
       if (!fortsett) return;
     }
 
     // Påminnelse om kommentar mangler (valgfritt, men spør)
     const kommentarVerdi = (document.querySelector('textarea[name="comment"]').value || '').trim();
     if (!kommentarVerdi) {
-      const fortsett2 = confirm('Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.');
+      const fortsett2 = confirm(T.glemtKommentar||'Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.');
       if (!fortsett2) return;
     }
 
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Lagrer…';
+    submitBtn.textContent = T.lagrerText||'Lagrer…';
 
     try {
       // Last opp bilde først hvis det finnes
       let imageUrl = null;
       if (currentImageBlob) {
-        submitBtn.textContent = 'Laster opp bilde…';
+        submitBtn.textContent = T.lasterOppBildeText||'Laster opp bilde…';
         const filename = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
         const { error: uploadErr } = await db.storage
           .from('soup-images')
@@ -1688,7 +1694,7 @@
         imageUrl = data.publicUrl;
       }
 
-      submitBtn.textContent = 'Lagrer anmeldelse…';
+      submitBtn.textContent = T.lagrerAnmeldelseText||'Lagrer anmeldelse…';
       const formData = new FormData(e.target);
       const values = Object.values(currentRatings);
       const average = values.reduce((a, b) => a + b, 0) / values.length;
@@ -1700,7 +1706,7 @@
         .ilike('reviewer_name', normalizeName(formData.get('reviewer_name')))
         .limit(1);
       if (existing && existing.length > 0) {
-        const junkie = confirm('Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?');
+        const junkie = confirm(T.duplikat||'Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?');
         if (!junkie) { submitBtn.disabled = false; submitBtn.textContent = 'Lagre anmeldelse'; return; }
       }
 
@@ -1728,14 +1734,16 @@
 
       // Score-baserte meldinger og animasjoner
       playSlurpSound();
+      const resto = formData.get('restaurant');
+      const avgStr = average.toFixed(1).replace('.', ',');
       if (average >= 6.0) {
         showConfetti();
-        setTimeout(() => alert(`🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`), 400);
+        setTimeout(() => alert(T.perfektSuppe ? T.perfektSuppe(resto, avgStr) : `🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n${resto} fikk terningkast ${avgStr}`), 400);
       } else if (average < 2.0) {
-        alert(`💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+        alert(T.darligSuppe ? T.darligSuppe(resto, avgStr) : `💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n${resto} fikk terningkast ${avgStr}`);
       } else {
         showFishParticles();
-        alert(`Lagret! ${formData.get('restaurant')} fikk terningkast ${average.toFixed(1).replace('.', ',')}`);
+        alert(T.lagretMsg ? T.lagretMsg(resto, avgStr) : `Lagret! ${resto} fikk terningkast ${avgStr}`);
       }
     } catch (err) {
       alert('Noe gikk galt: ' + err.message);
@@ -1765,11 +1773,11 @@
 
   function updateAdminUI() {
     if (isAdmin) {
-      adminStatus.textContent = 'Innlogget';
-      adminToggle.textContent = 'Logg ut';
+      adminStatus.textContent = T.adminLoggetInn||'Innlogget';
+      adminToggle.textContent = T.adminLoggUt||'Logg ut';
     } else {
       adminStatus.textContent = '';
-      adminToggle.textContent = 'Admin';
+      adminToggle.textContent = T.adminKnapp||'Admin';
     }
   }
 
@@ -1797,20 +1805,20 @@
     const email = loginEmail.value.trim();
     const password = loginPassword.value;
     if (!email || !password) {
-      loginError.textContent = 'Skriv inn både email og passord.';
+      loginError.textContent = T.adminEpostPassord||'Skriv inn både email og passord.';
       loginError.style.display = 'block';
       return;
     }
     loginError.style.display = 'none';
     const { data, error } = await db.auth.signInWithPassword({ email, password });
     if (error) {
-      loginError.textContent = 'Innlogging feilet: ' + error.message;
+      loginError.textContent = T.adminFeilet ? T.adminFeilet(error.message) : 'Innlogging feilet: ' + error.message;
       loginError.style.display = 'block';
       return;
     }
     if (!data || !data.user || data.user.id !== ADMIN_USER_ID) {
       await db.auth.signOut();
-      loginError.textContent = 'Denne brukeren er ikke admin.';
+      loginError.textContent = T.adminIkkeFunnet||'Denne brukeren er ikke admin.';
       loginError.style.display = 'block';
       return;
     }
@@ -1844,9 +1852,1022 @@
   }
 
   // ============================================================
+  // OVERSETTELSER
+  // ============================================================
+  const TRANSLATIONS = {
+    no: {
+      hjem: '← Hjem', nyAnmeldelse: 'Ny anmeldelse', restaurant: 'Restaurant',
+      restaurantPlaceholder: 'F.eks. Fiskeriet', sted: 'Sted', stedPlaceholder: 'F.eks. Oslo',
+      dato: 'Dato', dittNavn: 'Ditt navn', navnPlaceholder: 'F.eks. Jon',
+      bildeLabel: '📷 Klikk her for å legge til bilde av suppa (valgfritt)',
+      deTiBud: 'De 10 bud', skalaInfo: 'Gi karakter 1–6 på hvert bud · 1 = elendig, 6 = perfekt',
+      darlig: 'Dårlig', perfekt: 'Perfekt', terningkastHeader: 'Terningkast:',
+      kommentar: 'Kommentar', valgfritt: '(valgfritt)',
+      kommentarPlaceholder: 'Si noen ord om opplevelsen, kelneren, stedet, eller hvilken som helst suppe-historie…',
+      lagreAnmeldelse: 'Lagre anmeldelse', nullstill: '↺ Nullstill skjema',
+      alleAnmeldelser: 'Alle anmeldelser', tilfeldigBtn: '🎲 Gi meg en tilfeldig suppe å dra på!',
+      sokRestaurant: '🔍 Søk restaurant…', alleByer: 'Alle byer', alleAnmeldere: 'Alle anmeldere',
+      alleScorer: 'Alle scorer', anmeldere: '🏅 Anmeldere', byLigaen: '🗺️ By-ligaen',
+      hotOrNot: '🔥 Hot or Not?', hotOrNotDesc: 'Hvilken av disse to ville du heller spist fiskesuppe på?',
+      suppeBingo: '🎯 Suppe-bingo', suppeBingoDesc: 'Skriv inn navnet ditt og se hvilke achievements du har låst opp!',
+      visBingo: 'Vis bingo', navnInput: 'Ditt navn…', fiskedagbok: '📖 Fiskedagbok',
+      fiskedagbokDesc: 'Dine suppe-minner i kronologisk rekkefølge.', visDagbok: 'Vis dagbok',
+      vilProveListe: '📋 Vil prøve-liste', vilProveDesc: 'Restauranter du vil besøke.',
+      vilProvePlaceholder: 'Restaurant + by…', leggTil: '+ Legg til',
+      vis: 'Vis', skjul: 'Skjul', terningkastLabel: 'Terningkast', snittAv: 'Snitt av',
+      holderRekorden: 'holder rekorden', suppemesterManed: 'Suppemester denne måneden!',
+      ukensBesteSuppe: 'Ukens beste suppe',
+      anmeldelse1: '1 anmeldelse', anmeldelseN: (n) => `${n} anmeldelser`,
+      laster: 'Laster…', ingenTreff: 'Ingen treff — prøv å justere filtrene.',
+      kriterier: KRITERIER_NO,
+    },
+    en: {
+      hjem: '← Home', nyAnmeldelse: 'New review', restaurant: 'Restaurant',
+      restaurantPlaceholder: 'E.g. The Fishery', sted: 'Location', stedPlaceholder: 'E.g. London',
+      dato: 'Date', dittNavn: 'Your name', navnPlaceholder: 'E.g. Jon',
+      bildeLabel: '📷 Click here to add a photo of the soup (optional)',
+      deTiBud: 'The 10 Commandments', skalaInfo: 'Rate 1–6 on each commandment · 1 = terrible, 6 = perfect',
+      darlig: 'Terrible', perfekt: 'Perfect', terningkastHeader: 'Score:',
+      kommentar: 'Comment', valgfritt: '(optional)',
+      kommentarPlaceholder: 'Say something about the experience, the waiter, the place, or any soup story…',
+      lagreAnmeldelse: 'Save review', nullstill: '↺ Reset form',
+      alleAnmeldelser: 'All reviews', tilfeldigBtn: '🎲 Give me a random soup to visit!',
+      sokRestaurant: '🔍 Search restaurant…', alleByer: 'All cities', alleAnmeldere: 'All reviewers',
+      alleScorer: 'All scores', anmeldere: '🏅 Reviewers', byLigaen: '🗺️ City League',
+      hotOrNot: '🔥 Hot or Not?', hotOrNotDesc: 'Which of these two would you rather eat fish soup at?',
+      suppeBingo: '🎯 Soup Bingo', suppeBingoDesc: "Enter your name and see which achievements you've unlocked!",
+      visBingo: 'Show bingo', navnInput: 'Your name…', fiskedagbok: '📖 Fish Diary',
+      fiskedagbokDesc: 'Your soup memories in chronological order.', visDagbok: 'Show diary',
+      vilProveListe: '📋 Want to try list', vilProveDesc: 'Restaurants you want to visit.',
+      vilProvePlaceholder: 'Restaurant + city…', leggTil: '+ Add',
+      vis: 'Show', skjul: 'Hide', terningkastLabel: 'Score', snittAv: 'Avg of',
+      holderRekorden: 'holds the record', suppemesterManed: 'Soup Master this month!',
+      ukensBesteSuppe: 'Soup of the week',
+      anmeldelse1: '1 review', anmeldelseN: (n) => `${n} reviews`,
+      laster: 'Loading…', ingenTreff: 'No results — try adjusting the filters.',
+      kriterier: [
+        "Proper thick consistency (not too thin)",
+        "Properly salted (not too salty)",
+        "Nicely cut vegetables (not too long)",
+        "Variety of fish types (at least two kinds)",
+        "Served properly hot (not too cold)",
+        "Fresh bread and proper butter on the side (no dry bread, no individual butter packets)",
+        "Adequate portion size (not too small)",
+        "Free of fish bones (no kitchen tweezers at the table)",
+        "Juicy fish pieces (not overcooked or dry)",
+        "Appropriately sized fish pieces (no knife required)"
+      ],
+    },
+    hr: {
+      hjem: '← Početna', nyAnmeldelse: 'Nova recenzija', restaurant: 'Restoran',
+      restaurantPlaceholder: 'Npr. Ribarska kuća', sted: 'Mjesto', stedPlaceholder: 'Npr. Split',
+      dato: 'Datum', dittNavn: 'Vaše ime', navnPlaceholder: 'Npr. Jon',
+      bildeLabel: '📷 Kliknite ovdje za dodavanje fotografije juhe (neobavezno)',
+      deTiBud: '10 zapovijedi', skalaInfo: 'Ocjenite 1–6 za svaku zapovijed · 1 = užasno, 6 = savršeno',
+      darlig: 'Užasno', perfekt: 'Savršeno', terningkastHeader: 'Ocjena:',
+      kommentar: 'Komentar', valgfritt: '(neobavezno)',
+      kommentarPlaceholder: 'Recite nešto o iskustvu, konobaru, mjestu ili bilo kojoj priči o juhi…',
+      lagreAnmeldelse: 'Spremi recenziju', nullstill: '↺ Resetiraj obrazac',
+      alleAnmeldelser: 'Sve recenzije', tilfeldigBtn: '🎲 Daj mi nasumičnu juhu za posjetiti!',
+      sokRestaurant: '🔍 Traži restoran…', alleByer: 'Svi gradovi', alleAnmeldere: 'Svi recenzenti',
+      alleScorer: 'Sve ocjene', anmeldere: '🏅 Recenzenti', byLigaen: '🗺️ Gradska liga',
+      hotOrNot: '🔥 Hot or Not?', hotOrNotDesc: 'U koji od ova dva biste radije otišli na riblja juhu?',
+      suppeBingo: '🎯 Bingo juhe', suppeBingoDesc: 'Upišite svoje ime i pogledajte koja ste postignuća otključali!',
+      visBingo: 'Prikaži bingo', navnInput: 'Vaše ime…', fiskedagbok: '📖 Dnevnik juha',
+      fiskedagbokDesc: 'Vaša sjećanja na juhe u kronološkom redu.', visDagbok: 'Prikaži dnevnik',
+      vilProveListe: '📋 Lista za probati', vilProveDesc: 'Restorani koje želite posjetiti.',
+      vilProvePlaceholder: 'Restoran + grad…', leggTil: '+ Dodaj',
+      vis: 'Prikaži', skjul: 'Sakrij', terningkastLabel: 'Ocjena', snittAv: 'Prosjek od',
+      holderRekorden: 'drži rekord', suppemesterManed: 'Majstor juhe ovog mjeseca!',
+      ukensBesteSuppe: 'Juha tjedna',
+      anmeldelse1: '1 recenzija', anmeldelseN: (n) => `${n} recenzij${n === 1 ? 'a' : 'a'}`,
+      laster: 'Učitavanje…', ingenTreff: 'Nema rezultata — pokušajte prilagoditi filtere.',
+      kriterier: [
+        "Odgovarajuća gustoća (nije previše rijetka)",
+        "Odgovarajuće soljeno (nije previše slano)",
+        "Lijepo narezano povrće (nije predugo)",
+        "Raznolikost vrsta ribe (najmanje dvije vrste)",
+        "Posluženo vruće (nije hladno)",
+        "Svježi kruh i pravo maslo uz juhu (ne suhi kruh, ne pojedinačni paketi maslaca)",
+        "Odgovarajuća veličina porcije (nije premala)",
+        "Bez ribljih kostiju (bez pincete pri stolu)",
+        "Sočni komadi ribe (nisu prepečeni ni suhi)",
+        "Odgovarajuće veliki komadi ribe (nije potreban nož)"
+      ],
+    },
+    sq: {
+      hjem: '← Kreu', nyAnmeldelse: 'Vlerësim i ri', restaurant: 'Restorant',
+      restaurantPlaceholder: 'P.sh. Gjeli i Detit', sted: 'Qyteti', stedPlaceholder: 'P.sh. Tiranë',
+      dato: 'Data', dittNavn: 'Emri juaj', navnPlaceholder: 'P.sh. Jon',
+      bildeLabel: '📷 Klikoni këtu për të shtuar një foto të supës (opsionale)',
+      deTiBud: '10 Urdhërimet', skalaInfo: 'Vlerësoni 1–6 për secilën urdhërim · 1 = i tmerrshëm, 6 = i përsosur',
+      darlig: 'I tmerrshëm', perfekt: 'I përsosur', terningkastHeader: 'Vlerësim:',
+      kommentar: 'Koment', valgfritt: '(opsionale)',
+      kommentarPlaceholder: 'Thuani diçka për përvojën, kamerierun, vendin ose çdo histori supë…',
+      lagreAnmeldelse: 'Ruaj vlerësimin', nullstill: '↺ Rivendos formularin',
+      alleAnmeldelser: 'Të gjitha vlerësimet', tilfeldigBtn: '🎲 Jepni një supë rastësore për të vizituar!',
+      sokRestaurant: '🔍 Kërko restorant…', alleByer: 'Të gjitha qytetet', alleAnmeldere: 'Të gjithë vlerësuesit',
+      alleScorer: 'Të gjitha pikët', anmeldere: '🏅 Vlerësuesit', byLigaen: '🗺️ Liga e qytetit',
+      hotOrNot: '🔥 Hot or Not?', hotOrNotDesc: 'Cilën nga këto dy do të preferonit të hanit supë peshku?',
+      suppeBingo: '🎯 Bingo i supës', suppeBingoDesc: 'Shkruani emrin tuaj dhe shihni cilat arritje keni zhbllokuar!',
+      visBingo: 'Shfaq bingo', navnInput: 'Emri juaj…', fiskedagbok: '📖 Ditari i peshkut',
+      fiskedagbokDesc: 'Kujtimet tuaja të supës në rend kronologjik.', visDagbok: 'Shfaq ditarin',
+      vilProveListe: '📋 Lista për të provuar', vilProveDesc: 'Restorantet që dëshironi të vizitoni.',
+      vilProvePlaceholder: 'Restorant + qytet…', leggTil: '+ Shto',
+      vis: 'Shfaq', skjul: 'Fshih', terningkastLabel: 'Pikë', snittAv: 'Mesatare e',
+      holderRekorden: 'mban rekordin', suppemesterManed: 'Mjeshtar i supës këtë muaj!',
+      ukensBesteSuppe: 'Supa e javës',
+      anmeldelse1: '1 vlerësim', anmeldelseN: (n) => `${n} vlerësime`,
+      laster: 'Duke ngarkuar…', ingenTreff: 'Nuk ka rezultate — provoni të rregulloni filtrat.',
+      kriterier: [
+        "Konsistencë e duhur (jo shumë e hollë)",
+        "Mjaftueshëm i kripur (jo shumë i kripur)",
+        "Perime të prera bukur (jo shumë të gjata)",
+        "Shumëllojshmëri e llojeve të peshkut (të paktën dy lloje)",
+        "Shërbyer mjaftueshëm nxehtë (jo i ftohtë)",
+        "Bukë e freskët dhe gjalp i mirë pranë (jo bukë e thatë, jo paketa individuale gjalpë)",
+        "Porcion i mjaftueshëm (jo shumë i vogël)",
+        "Pa kocka peshku (pa pincetë kuzhinë në tryezë)",
+        "Copa peshku me lëng (jo të tepërt gatuar ose të thata)",
+        "Copa peshku të madhësisë së duhur (nuk nevojitet thikë)"
+      ],
+    },
+    da: {
+      hjem: '← Hjem', nyAnmeldelse: 'Ny anmeldelse', restaurant: 'Restaurant',
+      restaurantPlaceholder: 'F.eks. Fisketorvet', sted: 'Sted', stedPlaceholder: 'F.eks. København',
+      dato: 'Dato', dittNavn: 'Dit navn', navnPlaceholder: 'F.eks. Jon',
+      bildeLabel: '📷 Klik her for at tilføje billede af suppen (valgfrit)',
+      deTiBud: 'De 10 bud', skalaInfo: 'Giv karakter 1–6 på hvert bud · 1 = elendig, 6 = perfekt',
+      darlig: 'Dårlig', perfekt: 'Perfekt', terningkastHeader: 'Terningkast:',
+      kommentar: 'Kommentar', valgfritt: '(valgfrit)',
+      kommentarPlaceholder: 'Sig noget om oplevelsen, tjeneren, stedet eller en fiskesuppe-historie…',
+      lagreAnmeldelse: 'Gem anmeldelse', nullstill: '↺ Nulstil formular',
+      alleAnmeldelser: 'Alle anmeldelser', tilfeldigBtn: '🎲 Giv mig en tilfældig suppe at besøge!',
+      sokRestaurant: '🔍 Søg restaurant…', alleByer: 'Alle byer', alleAnmeldere: 'Alle anmeldere',
+      alleScorer: 'Alle scorer', anmeldere: '🏅 Anmeldere', byLigaen: '🗺️ By-ligaen',
+      hotOrNot: '🔥 Hot or Not?', hotOrNotDesc: 'Hvilken af disse to ville du helst spise fiskesuppe på?',
+      suppeBingo: '🎯 Suppe-bingo', suppeBingoDesc: 'Skriv dit navn og se hvilke achievements du har låst op!',
+      visBingo: 'Vis bingo', navnInput: 'Dit navn…', fiskedagbok: '📖 Fiskedagbog',
+      fiskedagbokDesc: 'Dine suppe-minder i kronologisk rækkefølge.', visDagbok: 'Vis dagbog',
+      vilProveListe: '📋 Vil prøve-liste', vilProveDesc: 'Restauranter du vil besøge.',
+      vilProvePlaceholder: 'Restaurant + by…', leggTil: '+ Tilføj',
+      vis: 'Vis', skjul: 'Skjul', terningkastLabel: 'Terningkast', snittAv: 'Snit af',
+      holderRekorden: 'holder rekorden', suppemesterManed: 'Suppekonge denne måned!',
+      ukensBesteSuppe: 'Ugens bedste suppe',
+      anmeldelse1: '1 anmeldelse', anmeldelseN: (n) => `${n} anmeldelser`,
+      laster: 'Indlæser…', ingenTreff: 'Ingen resultater — prøv at justere filtrene.',
+      kriterier: [
+        "Tilpas tyk konsistens (ikke for tynd)",
+        "Tilpas saltet (ikke for salt)",
+        "Pænt skåret grøntsager (ikke for lange)",
+        "Variation i fiskearter (mindst to typer)",
+        "Serveret ordentlig varm (ikke for kold)",
+        "Frisk brød og ordentlig smør ved siden af (ikke tørt brød, og ikke enkeltpakker smør)",
+        "Tilpas stor portion (ikke for lille)",
+        "Fri for fiskeben (ingen køkkenpincet ved bordet)",
+        "Saftige fiskestykker (ikke overkogt eller tørt)",
+        "Tilpas store fiskestykker (ingen kniv nødvendig)"
+      ],
+    },
+    de: {
+      hjem: '← Startseite', nyAnmeldelse: 'Neue Bewertung', restaurant: 'Restaurant',
+      restaurantPlaceholder: 'z.B. Fischerei', sted: 'Ort', stedPlaceholder: 'z.B. Hamburg',
+      dato: 'Datum', dittNavn: 'Dein Name', navnPlaceholder: 'z.B. Jon',
+      bildeLabel: '📷 Klicken zum Hinzufügen eines Fotos der Suppe (optional)',
+      deTiBud: 'Die 10 Gebote', skalaInfo: 'Bewerte 1–6 für jedes Gebot · 1 = miserabel, 6 = perfekt',
+      darlig: 'Miserabel', perfekt: 'Perfekt', terningkastHeader: 'Bewertung:',
+      kommentar: 'Kommentar', valgfritt: '(optional)',
+      kommentarPlaceholder: 'Sag etwas über das Erlebnis, den Kellner, den Ort oder eine Suppengeschichte…',
+      lagreAnmeldelse: 'Bewertung speichern', nullstill: '↺ Formular zurücksetzen',
+      alleAnmeldelser: 'Alle Bewertungen', tilfeldigBtn: '🎲 Gib mir eine zufällige Suppe zum Besuchen!',
+      sokRestaurant: '🔍 Restaurant suchen…', alleByer: 'Alle Städte', alleAnmeldere: 'Alle Bewerter',
+      alleScorer: 'Alle Punkte', anmeldere: '🏅 Bewerter', byLigaen: '🗺️ Stadtliga',
+      hotOrNot: '🔥 Hot or Not?', hotOrNotDesc: 'In welchem dieser beiden würdest du lieber Fischsuppe essen?',
+      suppeBingo: '🎯 Suppen-Bingo', suppeBingoDesc: 'Gib deinen Namen ein und sieh, welche Errungenschaften du freigeschaltet hast!',
+      visBingo: 'Bingo anzeigen', navnInput: 'Dein Name…', fiskedagbok: '📖 Fischtagebuch',
+      fiskedagbokDesc: 'Deine Suppen-Erinnerungen in chronologischer Reihenfolge.', visDagbok: 'Tagebuch anzeigen',
+      vilProveListe: '📋 Möchte ich ausprobieren', vilProveDesc: 'Restaurants, die du besuchen möchtest.',
+      vilProvePlaceholder: 'Restaurant + Stadt…', leggTil: '+ Hinzufügen',
+      vis: 'Anzeigen', skjul: 'Verbergen', terningkastLabel: 'Bewertung', snittAv: 'Ø von',
+      holderRekorden: 'hält den Rekord', suppemesterManed: 'Suppenmeister diesen Monat!',
+      ukensBesteSuppe: 'Suppe der Woche',
+      anmeldelse1: '1 Bewertung', anmeldelseN: (n) => `${n} Bewertungen`,
+      laster: 'Lädt…', ingenTreff: 'Keine Ergebnisse — versuche die Filter anzupassen.',
+      kriterier: [
+        "Angemessene Konsistenz (nicht zu dünn)",
+        "Angemessen gesalzen (nicht zu salzig)",
+        "Schön geschnittenes Gemüse (nicht zu lang)",
+        "Vielfalt der Fischarten (mindestens zwei Sorten)",
+        "Ordentlich heiß serviert (nicht zu kalt)",
+        "Frisches Brot und ordentliche Butter dabei (kein trockenes Brot, keine Einzelpackungen)",
+        "Angemessene Portionsgröße (nicht zu klein)",
+        "Ohne Gräten (keine Küchenpinzette am Tisch)",
+        "Saftige Fischstücke (nicht verkocht oder trocken)",
+        "Angemessene Größe der Fischstücke (kein Messer nötig)"
+      ],
+    },
+    es: {
+      hjem: '← Inicio', nyAnmeldelse: 'Nueva reseña', restaurant: 'Restaurante',
+      restaurantPlaceholder: 'P.ej. La Pescadería', sted: 'Ciudad', stedPlaceholder: 'P.ej. Barcelona',
+      dato: 'Fecha', dittNavn: 'Tu nombre', navnPlaceholder: 'P.ej. Jon',
+      bildeLabel: '📷 Haz clic aquí para añadir una foto de la sopa (opcional)',
+      deTiBud: 'Los 10 mandamientos', skalaInfo: 'Puntúa 1–6 en cada mandamiento · 1 = horrible, 6 = perfecto',
+      darlig: 'Horrible', perfekt: 'Perfecto', terningkastHeader: 'Puntuación:',
+      kommentar: 'Comentario', valgfritt: '(opcional)',
+      kommentarPlaceholder: 'Di algo sobre la experiencia, el camarero, el lugar o cualquier historia de sopa…',
+      lagreAnmeldelse: 'Guardar reseña', nullstill: '↺ Restablecer formulario',
+      alleAnmeldelser: 'Todas las reseñas', tilfeldigBtn: '🎲 ¡Dame una sopa aleatoria para visitar!',
+      sokRestaurant: '🔍 Buscar restaurante…', alleByer: 'Todas las ciudades', alleAnmeldere: 'Todos los reseñadores',
+      alleScorer: 'Todas las puntuaciones', anmeldere: '🏅 Reseñadores', byLigaen: '🗺️ Liga de ciudades',
+      hotOrNot: '🔥 Hot or Not?', hotOrNotDesc: '¿En cuál de estos dos preferirías comer sopa de pescado?',
+      suppeBingo: '🎯 Sopa bingo', suppeBingoDesc: '¡Introduce tu nombre y ve qué logros has desbloqueado!',
+      visBingo: 'Mostrar bingo', navnInput: 'Tu nombre…', fiskedagbok: '📖 Diario de pescado',
+      fiskedagbokDesc: 'Tus recuerdos de sopas en orden cronológico.', visDagbok: 'Mostrar diario',
+      vilProveListe: '📋 Lista de pendientes', vilProveDesc: 'Restaurantes que quieres visitar.',
+      vilProvePlaceholder: 'Restaurante + ciudad…', leggTil: '+ Añadir',
+      vis: 'Mostrar', skjul: 'Ocultar', terningkastLabel: 'Puntuación', snittAv: 'Prom. de',
+      holderRekorden: 'tiene el récord', suppemesterManed: '¡Maestro de la sopa este mes!',
+      ukensBesteSuppe: 'Sopa de la semana',
+      anmeldelse1: '1 reseña', anmeldelseN: (n) => `${n} reseñas`,
+      laster: 'Cargando…', ingenTreff: 'Sin resultados — intenta ajustar los filtros.',
+      kriterier: [
+        "Consistencia adecuada (no demasiado líquida)",
+        "Bien sazonada (no demasiado salada)",
+        "Verduras bien cortadas (no demasiado largas)",
+        "Variedad de tipos de pescado (al menos dos tipos)",
+        "Servida suficientemente caliente (no fría)",
+        "Pan fresco y mantequilla real al lado (no pan seco, no paquetes individuales de mantequilla)",
+        "Porción adecuada (no demasiado pequeña)",
+        "Libre de espinas (sin pinzas de cocina en la mesa)",
+        "Trozos de pescado jugosos (no sobrecocinados ni secos)",
+        "Trozos de pescado de tamaño adecuado (no se necesita cuchillo)"
+      ],
+    },
+  };
+
+  let T = TRANSLATIONS.no;
+  let currentLang = 'no';
+
+  // ============================================================
+  // EKSTRA OVERSETTELSER (humor, rangtitler, bingo, osv.)
+  // ============================================================
+  const EXTRA_TRANSLATIONS = {
+    no: {
+      ranks: [
+        { min: 20, title: 'Neptuns Utvalgte', emoji: '🔱' },
+        { min: 10, title: 'Suppedommeren',    emoji: '👨‍⚖️' },
+        { min: 5,  title: 'Sjøkapteinen',     emoji: '⚓' },
+        { min: 3,  title: 'Fiskeren',         emoji: '🎣' },
+        { min: 1,  title: 'Fiskeelskeren',    emoji: '🐟' },
+      ],
+      achievements: {
+        pioner:   { name: 'Pioneren',       desc: 'Første til å anmelde en restaurant' },
+        gourmet:  { name: 'Gourmeten',      desc: 'Gitt terningkast 5,5 eller høyere' },
+        kresen:   { name: 'Kresen',         desc: 'Gitt terningkast 3,0 eller lavere' },
+        eventyrer:{ name: 'Eventyreren',    desc: 'Anmeldt i 3 eller flere byer' },
+        paastrek: { name: 'På strek',       desc: 'Anmeldt noe siste 30 dager' },
+        ivrig:    { name: 'Ivrig anmelder', desc: '5 eller flere anmeldelser' },
+        vendetta: { name: 'Vendetta',       desc: 'Har gitt mye lavere score enn en kompis på samme restaurant' },
+      },
+      bingoTasks: [
+        { emoji: '🐟', tekst: 'Første anmeldelse noensinne' },
+        { emoji: '📍', tekst: 'Anmeldt i 2 byer' },
+        { emoji: '🏆', tekst: 'Gitt terningkast 5,0+' },
+        { emoji: '😤', tekst: 'Gitt terningkast under 3,0' },
+        { emoji: '🔄', tekst: 'Besøkt samme restaurant 2 ganger' },
+        { emoji: '📸', tekst: 'Lastet opp bilde' },
+        { emoji: '💬', tekst: 'Skrevet kommentar' },
+        { emoji: '🗺️', tekst: 'Anmeldt i 3 ulike byer' },
+        { emoji: '🌟', tekst: '5 anmeldelser totalt' },
+      ],
+      ukensUtfordringer: [
+        { emoji: '🦐', tekst: 'Finn en fiskesuppe med REKER denne uken!' },
+        { emoji: '🌿', tekst: 'Denne uken: Gi terningkast på en suppe med urter.' },
+        { emoji: '🥖', tekst: 'Utfordring: Sjekk om brødet er ferskt og smøret er ordentlig!' },
+        { emoji: '🗺️', tekst: 'Prøv fiskesuppe i en by du aldri har besøkt før.' },
+        { emoji: '🍷', tekst: 'Bonus-utfordring: Fiskesuppe med et glass hvitvin ved siden av!' },
+        { emoji: '📸', tekst: 'Husk bilde denne uken — ingen bilde, ingen kredibilitet!' },
+        { emoji: '🤝', tekst: 'Ta med en kompis og sammenlign scoren — hvem er mest kresne?' },
+        { emoji: '🥶', tekst: 'Test om suppa faktisk er varm nok — nr. 5 på budlista!' },
+        { emoji: '🐟', tekst: 'Klarer du å finne en suppe med minst 3 fiskeslag?' },
+        { emoji: '⚔️', tekst: 'Utfordre en kompis: Slå hverandres høyeste score!' },
+        { emoji: '🏆', tekst: 'Jakt på en suppe over 5,0 i snitt! Finnes det en slik?' },
+        { emoji: '🔍', tekst: 'Besøk en restaurant ingen har anmeldt ennå — vær pionér!' },
+      ],
+      alleKriterier: 'E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!',
+      glemtBilde: 'Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.',
+      glemtKommentar: 'Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.',
+      duplikat: 'Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?',
+      perfektSuppe: (r, s) => `🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n${r} fikk terningkast ${s}`,
+      darligSuppe:  (r, s) => `💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n${r} fikk terningkast ${s}`,
+      lagretMsg:    (r, s) => `Lagret! ${r} fikk terningkast ${s}`,
+      ikkeSuppeTittel: 'Nu va du smart. Nu va du VELDIG smart!',
+      ikkeSuppeInfo:   'Tror du ikke at Æ vesste at du kom tel å være en satans kukunge? Din kuuk. Last opp på nytt jævla kukunge',
+      sjekkerBilde: '🔍 Sjekker om dette faktisk er ei fiskesuppe…',
+      godkjenn: '✅ Godkjenn', taBildeOmIgjen: '📷 Ta bilde på nytt', fjernBilde: 'Fjern bilde',
+      lagrerText: 'Lagrer…', lasterOppBildeText: 'Laster opp bilde…', lagrerAnmeldelseText: 'Lagrer anmeldelse…',
+      tilfeldigAlert: (r, c) => `🎲 Her burde du dra:\n\n${r} — ${c}\n\nNu e det ingen unnskyldninga!`,
+      honResultat: (w, l) => `✅ Du foretrekker ${w} over ${l}!`,
+      slettBekreft: 'Sikker på at du vil slette denne anmeldelsen?',
+      slettKnapp: 'Slett', kortKnapp: '🎴 Kort', utfordreKnapp: '⚔️ Utfordre',
+      utfordringTekst: (r, c, s) => `Jeg utfordrer deg til å slå min score på ${r}, ${c} (${s} i terningkast) — klarer du det, din kuk? 🐟\nhttps://fiskesuppeadvisor.vercel.app`,
+      utfordringKopiert: 'Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.',
+      kortDel: '📤 Del', kortLukk: 'Lukk', kortKopiert: 'Kort-tekst kopiert til utklippstavlen!',
+      anmeldtAv: 'Anmeldt av',
+      ingenAnmeldelser: 'Ingen suppeanmeldelser enda. Fyll ut skjemaet over!',
+      ingenAnmeldere: 'Ingen anmeldere enda.', ingenByer: 'Ingen byer enda.', ingenData: 'Ingen data enda.',
+      trenger2Restauranter: 'Trenger minst 2 restauranter i lista.',
+      bingoNavnPrompt: 'Skriv inn navn for å se bingo-brettet ditt.',
+      bingoIngenAnmeldelser: 'Ingen anmeldelser lastet enda.',
+      bingoFullfort: (d, t) => `${d} av ${t} fullført`, bingoBingo: 'BINGO! 🎉',
+      dagbokNavnPrompt: 'Skriv inn navnet ditt.', dagbokIngenLastet: 'Ingen anmeldelser lastet.',
+      dagbokIngen: (n) => `Ingen anmeldelser funnet for "${n}".`,
+      vilProveIngen: 'Ingen steder i lista enda. Legg til noe!',
+      paaMinnelse: (d) => `🐟 Det er over ${d} dager siden siste anmeldelse! På tide å finne en ny suppe?`,
+      pwaIosSafari: '📲 Trykk på Del-ikonet nederst og velg «Legg til på hjemskjerm».',
+      pwaAndroidReady: '📲 Installer Fiskesuppa som app!',
+      pwaInAppIos: '📲 Åpne lenken i Safari for å installere Fiskesuppa som app.',
+      pwaInAppAndroid: '📲 Åpne lenken i Chrome for å installere Fiskesuppa som app.',
+      pwaInstallerKnapp: 'Installer',
+      adminLoggetInn: 'Innlogget', adminLoggUt: 'Logg ut', adminKnapp: 'Admin',
+      adminModalTittel: 'Logg inn som admin', adminAvbryt: 'Avbryt', adminLoggInn: 'Logg inn',
+      adminEpostPassord: 'Skriv inn både email og passord.',
+      adminIkkeFunnet: 'Denne brukeren er ikke admin.',
+      adminFeilet: (m) => `Innlogging feilet: ${m}`,
+    },
+    en: {
+      ranks: [
+        { min: 20, title: "Neptune's Chosen", emoji: '🔱' },
+        { min: 10, title: 'The Soup Judge',   emoji: '👨‍⚖️' },
+        { min: 5,  title: 'The Sea Captain',  emoji: '⚓' },
+        { min: 3,  title: 'The Fisherman',    emoji: '🎣' },
+        { min: 1,  title: 'Fish Lover',       emoji: '🐟' },
+      ],
+      achievements: {
+        pioner:   { name: 'Pioneer',        desc: 'First to review a restaurant' },
+        gourmet:  { name: 'Gourmet',        desc: 'Gave a score of 5.5 or higher' },
+        kresen:   { name: 'Picky',          desc: 'Gave a score of 3.0 or lower' },
+        eventyrer:{ name: 'Explorer',       desc: 'Reviewed in 3 or more cities' },
+        paastrek: { name: 'On a Roll',      desc: 'Reviewed something in the last 30 days' },
+        ivrig:    { name: 'Keen Reviewer',  desc: '5 or more reviews' },
+        vendetta: { name: 'Vendetta',       desc: 'Gave a much lower score than a friend at the same restaurant' },
+      },
+      bingoTasks: [
+        { emoji: '🐟', tekst: 'First review ever' },
+        { emoji: '📍', tekst: 'Reviewed in 2 cities' },
+        { emoji: '🏆', tekst: 'Gave a score of 5.0+' },
+        { emoji: '😤', tekst: 'Gave a score below 3.0' },
+        { emoji: '🔄', tekst: 'Visited the same restaurant twice' },
+        { emoji: '📸', tekst: 'Uploaded a photo' },
+        { emoji: '💬', tekst: 'Written a comment' },
+        { emoji: '🗺️', tekst: 'Reviewed in 3 different cities' },
+        { emoji: '🌟', tekst: '5 reviews total' },
+      ],
+      ukensUtfordringer: [
+        { emoji: '🦐', tekst: 'Find a fish soup with PRAWNS this week!' },
+        { emoji: '🌿', tekst: 'This week: Rate a soup with herbs.' },
+        { emoji: '🥖', tekst: 'Challenge: Check if the bread is fresh and the butter is proper!' },
+        { emoji: '🗺️', tekst: 'Try fish soup in a city you have never visited before.' },
+        { emoji: '🍷', tekst: 'Bonus challenge: Fish soup with a glass of white wine on the side!' },
+        { emoji: '📸', tekst: 'Remember the photo this week — no photo, no credibility!' },
+        { emoji: '🤝', tekst: 'Bring a friend and compare scores — who is the pickiest?' },
+        { emoji: '🥶', tekst: 'Test if the soup is actually hot enough — rule number 5!' },
+        { emoji: '🐟', tekst: 'Can you find a soup with at least 3 types of fish?' },
+        { emoji: '⚔️', tekst: 'Challenge a friend: Beat each other\'s highest score!' },
+        { emoji: '🏆', tekst: 'Hunt for a soup with an average over 5.0! Does one exist?' },
+        { emoji: '🔍', tekst: 'Visit a restaurant nobody has reviewed yet — be a pioneer!' },
+      ],
+      alleKriterier: 'Are you actually blind?!\n\nYou need to rate ALL 10 commandments before saving, you muppet!',
+      glemtBilde: 'Forgot a photo, did you? Typical.\n\nPress OK to save without a photo, or Cancel to add one.',
+      glemtKommentar: 'So you have chosen to say absolutely NOTHING? Bold and cowardly.\n\nPress OK to save without a comment, or Cancel to add one.',
+      duplikat: 'Back for more, like a proper addict? 🐟\n\nYou have already reviewed this restaurant. Add another review anyway?',
+      perfektSuppe: (r, s) => `🏆 PERFECT SOUP! You have found the meaning of life!\n\n${r} scored ${s}`,
+      darligSuppe:  (r, s) => `💀 That was clearly rubbish. Hope you demanded a refund, you poor soul.\n\n${r} scored ${s}`,
+      lagretMsg:    (r, s) => `Saved! ${r} scored ${s}`,
+      ikkeSuppeTittel: 'Oh, very clever. Very CLEVER indeed!',
+      ikkeSuppeInfo:   'Did you really think I would not notice? Upload an actual fish soup photo, you clown.',
+      sjekkerBilde: '🔍 Checking if this is actually a fish soup…',
+      godkjenn: '✅ Confirm', taBildeOmIgjen: '📷 Retake photo', fjernBilde: 'Remove photo',
+      lagrerText: 'Saving…', lasterOppBildeText: 'Uploading photo…', lagrerAnmeldelseText: 'Saving review…',
+      tilfeldigAlert: (r, c) => `🎲 You should go here:\n\n${r} — ${c}\n\nNo excuses!`,
+      honResultat: (w, l) => `✅ You prefer ${w} over ${l}!`,
+      slettBekreft: 'Are you sure you want to delete this review?',
+      slettKnapp: 'Delete', kortKnapp: '🎴 Card', utfordreKnapp: '⚔️ Challenge',
+      utfordringTekst: (r, c, s) => `I challenge you to beat my score at ${r}, ${c} (${s} out of 6) — think you can manage it? 🐟\nhttps://fiskesuppeadvisor.vercel.app`,
+      utfordringKopiert: 'Challenge copied to clipboard! Paste and send it to your mate.',
+      kortDel: '📤 Share', kortLukk: 'Close', kortKopiert: 'Card text copied to clipboard!',
+      anmeldtAv: 'Reviewed by',
+      ingenAnmeldelser: 'No fish soup reviews yet. Fill in the form above!',
+      ingenAnmeldere: 'No reviewers yet.', ingenByer: 'No cities yet.', ingenData: 'No data yet.',
+      trenger2Restauranter: 'Need at least 2 restaurants in the list.',
+      bingoNavnPrompt: 'Enter your name to see your bingo board.',
+      bingoIngenAnmeldelser: 'No reviews loaded yet.',
+      bingoFullfort: (d, t) => `${d} of ${t} completed`, bingoBingo: 'BINGO! 🎉',
+      dagbokNavnPrompt: 'Enter your name.', dagbokIngenLastet: 'No reviews loaded.',
+      dagbokIngen: (n) => `No reviews found for "${n}".`,
+      vilProveIngen: 'No places in the list yet. Add something!',
+      paaMinnelse: (d) => `🐟 It has been over ${d} days since your last review! Time to find a new soup?`,
+      pwaIosSafari: '📲 Tap the Share icon at the bottom and select "Add to Home Screen".',
+      pwaAndroidReady: '📲 Install Fiskesuppa as an app!',
+      pwaInAppIos: '📲 Open the link in Safari to install Fiskesuppa as an app.',
+      pwaInAppAndroid: '📲 Open the link in Chrome to install Fiskesuppa as an app.',
+      pwaInstallerKnapp: 'Install',
+      adminLoggetInn: 'Logged in', adminLoggUt: 'Log out', adminKnapp: 'Admin',
+      adminModalTittel: 'Log in as admin', adminAvbryt: 'Cancel', adminLoggInn: 'Log in',
+      adminEpostPassord: 'Please enter both email and password.',
+      adminIkkeFunnet: 'This user is not an admin.',
+      adminFeilet: (m) => `Login failed: ${m}`,
+    },
+    hr: {
+      ranks: [
+        { min: 20, title: 'Neptunov izabranik', emoji: '🔱' },
+        { min: 10, title: 'Sudac juhe',         emoji: '👨‍⚖️' },
+        { min: 5,  title: 'Morski kapetan',     emoji: '⚓' },
+        { min: 3,  title: 'Ribar',              emoji: '🎣' },
+        { min: 1,  title: 'Ljubitelj ribe',     emoji: '🐟' },
+      ],
+      achievements: {
+        pioner:   { name: 'Pionir',             desc: 'Prvi koji je recenzirao restoran' },
+        gourmet:  { name: 'Gurman',             desc: 'Dao ocjenu 5,5 ili više' },
+        kresen:   { name: 'Zahtjevan',          desc: 'Dao ocjenu 3,0 ili manje' },
+        eventyrer:{ name: 'Istraživač',         desc: 'Recenziran u 3 ili više gradova' },
+        paastrek: { name: 'Na valu',            desc: 'Recenziran nešto u zadnjih 30 dana' },
+        ivrig:    { name: 'Marljivi recenzent', desc: '5 ili više recenzija' },
+        vendetta: { name: 'Vendetta',           desc: 'Dao mnogo nižu ocjenu od prijatelja na istom restoranu' },
+      },
+      bingoTasks: [
+        { emoji: '🐟', tekst: 'Prva recenzija ikada' },
+        { emoji: '📍', tekst: 'Recenziran u 2 grada' },
+        { emoji: '🏆', tekst: 'Dao ocjenu 5,0+' },
+        { emoji: '😤', tekst: 'Dao ocjenu ispod 3,0' },
+        { emoji: '🔄', tekst: 'Posjetio isti restoran 2 puta' },
+        { emoji: '📸', tekst: 'Postavio fotografiju' },
+        { emoji: '💬', tekst: 'Napisao komentar' },
+        { emoji: '🗺️', tekst: 'Recenziran u 3 različita grada' },
+        { emoji: '🌟', tekst: '5 recenzija ukupno' },
+      ],
+      ukensUtfordringer: [
+        { emoji: '🦐', tekst: 'Pronađi riblja juhu s KOZICAMA ovaj tjedan!' },
+        { emoji: '🌿', tekst: 'Ovaj tjedan: Ocijeni juhu s biljkama.' },
+        { emoji: '🥖', tekst: 'Izazov: Provjeri je li kruh svježi i maslo pravo!' },
+        { emoji: '🗺️', tekst: 'Isprobaj riblja juhu u gradu koji nikad nisi posjetio.' },
+        { emoji: '🍷', tekst: 'Bonus-izazov: Riblja juha uz čašu bijelog vina!' },
+        { emoji: '📸', tekst: 'Ne zaboravi fotografiju — bez fotografije, bez kredibiliteta!' },
+        { emoji: '🤝', tekst: 'Dovedi prijatelja i usporedi ocjene — tko je zahtjevniji?' },
+        { emoji: '🥶', tekst: 'Provjeri je li juha dovoljno vruća — pravilo br. 5!' },
+        { emoji: '🐟', tekst: 'Možeš li pronaći juhu s barem 3 vrste ribe?' },
+        { emoji: '⚔️', tekst: 'Izazovi prijatelja: Pobijedi svačiji najviši rezultat!' },
+        { emoji: '🏆', tekst: 'U potrazi za juhom iznad prosjeka 5,0! Postoji li?' },
+        { emoji: '🔍', tekst: 'Posjeti restoran koji nitko nije ocijenio — budi pionir!' },
+      ],
+      alleKriterier: 'Jesi li slijep ili što?!\n\nMoraš ocjeniti SVIH 10 zapovijedi prije pohrane, budalo!',
+      glemtBilde: 'Zaboravio si fotografiju, ha? Tipično.\n\nKlikni OK za pohranu bez fotografije, ili Odustani za dodavanje.',
+      glemtKommentar: 'Dakle, odabrao si NIŠTA ne komentirati? Pravi kukavica.\n\nKlikni OK za pohranu bez komentara, ili Odustani za dodavanje.',
+      duplikat: 'Vratio si se po još, ko pravi ovisnik? 🐟\n\nVeć si recenzirao ovaj restoran. Dodati novu recenziju ipak?',
+      perfektSuppe: (r, s) => `🏆 SAVRŠENA JUHA! Pronašao si smisao života!\n\n${r} dobio ${s}`,
+      darligSuppe:  (r, s) => `💀 To je očito bio smeće. Nadam se da si tražio povrat novca.\n\n${r} dobio ${s}`,
+      lagretMsg:    (r, s) => `Pohranjeno! ${r} dobio ${s}`,
+      ikkeSuppeTittel: 'Oh, jako pametno. JAKO pametno!',
+      ikkeSuppeInfo:   'Misliš da nisam primijetio? Postavi pravu fotografiju riblje juhe, klaune.',
+      sjekkerBilde: '🔍 Provjeravam je li ovo stvarno riblja juha…',
+      godkjenn: '✅ Potvrdi', taBildeOmIgjen: '📷 Ponovno fotografiraj', fjernBilde: 'Ukloni fotografiju',
+      lagrerText: 'Pohrana…', lasterOppBildeText: 'Prijenos fotografije…', lagrerAnmeldelseText: 'Pohranjivanje recenzije…',
+      tilfeldigAlert: (r, c) => `🎲 Trebao bi otići ovdje:\n\n${r} — ${c}\n\nNema isprike!`,
+      honResultat: (w, l) => `✅ Preferiraš ${w} nad ${l}!`,
+      slettBekreft: 'Jesi li siguran da želiš obrisati ovu recenziju?',
+      slettKnapp: 'Obriši', kortKnapp: '🎴 Kartica', utfordreKnapp: '⚔️ Izazovi',
+      utfordringTekst: (r, c, s) => `Izazivam te da nadmašiš moj rezultat u ${r}, ${c} (${s} od 6) — možeš li? 🐟\nhttps://fiskesuppeadvisor.vercel.app`,
+      utfordringKopiert: 'Izazov kopiran u međuspremnik! Zalijepi i pošalji prijatelju.',
+      kortDel: '📤 Dijeli', kortLukk: 'Zatvori', kortKopiert: 'Tekst kartice kopiran u međuspremnik!',
+      anmeldtAv: 'Recenzirao',
+      ingenAnmeldelser: 'Još nema recenzija. Ispuni obrazac gore!',
+      ingenAnmeldere: 'Još nema recenzenata.', ingenByer: 'Još nema gradova.', ingenData: 'Još nema podataka.',
+      trenger2Restauranter: 'Potrebna su najmanje 2 restorana u listi.',
+      bingoNavnPrompt: 'Unesite ime za prikaz bingo ploče.',
+      bingoIngenAnmeldelser: 'Još nema učitanih recenzija.',
+      bingoFullfort: (d, t) => `${d} od ${t} dovršeno`, bingoBingo: 'BINGO! 🎉',
+      dagbokNavnPrompt: 'Unesite svoje ime.', dagbokIngenLastet: 'Nema učitanih recenzija.',
+      dagbokIngen: (n) => `Nije pronađena recenzija za "${n}".`,
+      vilProveIngen: 'Nema mjesta na listi. Dodajte nešto!',
+      paaMinnelse: (d) => `🐟 Prošlo je više od ${d} dana od zadnje recenzije! Vrijeme za novu juhu?`,
+      pwaIosSafari: '📲 Tapni ikonu Dijeli na dnu i odaberi "Dodaj na početni zaslon".',
+      pwaAndroidReady: '📲 Instaliraj Fiskesuppa kao aplikaciju!',
+      pwaInAppIos: '📲 Otvori link u Safariju za instalaciju Fiskesuppa.',
+      pwaInAppAndroid: '📲 Otvori link u Chromeu za instalaciju Fiskesuppa.',
+      pwaInstallerKnapp: 'Instaliraj',
+      adminLoggetInn: 'Prijavljeni', adminLoggUt: 'Odjavi se', adminKnapp: 'Admin',
+      adminModalTittel: 'Prijava kao admin', adminAvbryt: 'Odustani', adminLoggInn: 'Prijavi se',
+      adminEpostPassord: 'Unesite i e-mail i lozinku.',
+      adminIkkeFunnet: 'Ovaj korisnik nije admin.',
+      adminFeilet: (m) => `Prijava nije uspjela: ${m}`,
+    },
+    sq: {
+      ranks: [
+        { min: 20, title: 'I zgjedhuri i Neptunit', emoji: '🔱' },
+        { min: 10, title: 'Gjyqtari i supës',       emoji: '👨‍⚖️' },
+        { min: 5,  title: 'Kapiteni i detit',        emoji: '⚓' },
+        { min: 3,  title: 'Peshkatari',              emoji: '🎣' },
+        { min: 1,  title: 'Dashamiri i peshkut',     emoji: '🐟' },
+      ],
+      achievements: {
+        pioner:   { name: 'Pionieri',             desc: 'I pari që vlerësoi një restorant' },
+        gourmet:  { name: 'Gurman',               desc: 'Dha pikë 5,5 ose më shumë' },
+        kresen:   { name: 'Kërkues',              desc: 'Dha pikë 3,0 ose më pak' },
+        eventyrer:{ name: 'Eksplorues',           desc: 'Vlerësuar në 3 ose më shumë qytete' },
+        paastrek: { name: 'Në varg',              desc: 'Vlerësuar diçka në 30 ditët e fundit' },
+        ivrig:    { name: 'Vlerësues i zellshëm', desc: '5 ose më shumë vlerësime' },
+        vendetta: { name: 'Vendeta',              desc: 'Dha pikë shumë më të ulëta se një mik në të njëjtin restorant' },
+      },
+      bingoTasks: [
+        { emoji: '🐟', tekst: 'Vlerësimi i parë ndonjëherë' },
+        { emoji: '📍', tekst: 'Vlerësuar në 2 qytete' },
+        { emoji: '🏆', tekst: 'Dha pikë 5,0+' },
+        { emoji: '😤', tekst: 'Dha pikë nën 3,0' },
+        { emoji: '🔄', tekst: 'Vizitoi të njëjtin restorant 2 herë' },
+        { emoji: '📸', tekst: 'Ngarkoi foto' },
+        { emoji: '💬', tekst: 'Shkroi koment' },
+        { emoji: '🗺️', tekst: 'Vlerësuar në 3 qytete të ndryshme' },
+        { emoji: '🌟', tekst: '5 vlerësime gjithsej' },
+      ],
+      ukensUtfordringer: [
+        { emoji: '🦐', tekst: 'Gjej një supë peshku me KARKALECA këtë javë!' },
+        { emoji: '🌿', tekst: 'Këtë javë: Vlerëso një supë me barishte.' },
+        { emoji: '🥖', tekst: 'Sfidë: Kontrollo nëse buka është e freskët dhe gjalpë i mirë!' },
+        { emoji: '🗺️', tekst: 'Provo supë peshku në një qytet që nuk e ke vizituar kurrë.' },
+        { emoji: '🍷', tekst: 'Sfidë bonus: Supë peshku me një gotë verë të bardhë!' },
+        { emoji: '📸', tekst: 'Mos harro foton — pa foto, pa kredibilitet!' },
+        { emoji: '🤝', tekst: 'Sill një mik dhe krahaso pikët — kush është më kërkues?' },
+        { emoji: '🥶', tekst: 'Testo nëse supa është vërtet nxehtë — rregulli nr. 5!' },
+        { emoji: '🐟', tekst: 'A mund të gjesh një supë me të paktën 3 lloje peshku?' },
+        { emoji: '⚔️', tekst: 'Sfido një mik: Tejkalo pikët më të larta të njëri-tjetrit!' },
+        { emoji: '🏆', tekst: 'Gjahu i supës mbi mesataren 5,0! A ekziston e tillë?' },
+        { emoji: '🔍', tekst: 'Vizito një restorant që askush nuk ka vlerësuar — bëhu pionier!' },
+      ],
+      alleKriterier: 'A je vërtet i verbër?!\n\nDuhet të vlerësosh TË GJITHA 10 urdhërimet para ruajtjes, budalla!',
+      glemtBilde: 'Harrove foton, apo jo? Tipike.\n\nShtyp OK për ruajtje pa foto, ose Anulo për shtim.',
+      glemtKommentar: 'Pra, zgjodhe të mos komentosh ASGJË? Lëvizje frikacake.\n\nShtyp OK për ruajtje pa koment, ose Anulo për shtim.',
+      duplikat: 'Ktheve për më shumë, si i varur i vërtetë? 🐟\n\nE ke vlerësuar tashmë këtë restorant. Shto vlerësim tjetër gjithsesi?',
+      perfektSuppe: (r, s) => `🏆 SUPË E PËRSOSUR! Ke gjetur kuptimin e jetës!\n\n${r} mori ${s}`,
+      darligSuppe:  (r, s) => `💀 Ky ishte qartësisht mbeturinë. Shpresoj kërkove rimbursimin.\n\n${r} mori ${s}`,
+      lagretMsg:    (r, s) => `Ruajtur! ${r} mori ${s}`,
+      ikkeSuppeTittel: 'Oh, shumë zgjuar. SHUMË zgjuar!',
+      ikkeSuppeInfo:   'Mendoje se nuk do të vija re? Ngarko foto të supës së peshkut, kloun.',
+      sjekkerBilde: '🔍 Duke kontrolluar nëse kjo është vërtet supë peshku…',
+      godkjenn: '✅ Konfirmo', taBildeOmIgjen: '📷 Rifotografio', fjernBilde: 'Hiq foton',
+      lagrerText: 'Duke ruajtur…', lasterOppBildeText: 'Duke ngarkuar foton…', lagrerAnmeldelseText: 'Duke ruajtur vlerësimin…',
+      tilfeldigAlert: (r, c) => `🎲 Duhet të shkosh këtu:\n\n${r} — ${c}\n\nNuk ka justifikim!`,
+      honResultat: (w, l) => `✅ Preferon ${w} ndaj ${l}!`,
+      slettBekreft: 'A jeni i sigurt që dëshironi të fshini këtë vlerësim?',
+      slettKnapp: 'Fshi', kortKnapp: '🎴 Kartë', utfordreKnapp: '⚔️ Sfido',
+      utfordringTekst: (r, c, s) => `Të sfidoj të tejkalosh pikët e mia në ${r}, ${c} (${s} nga 6) — mendon se mund? 🐟\nhttps://fiskesuppeadvisor.vercel.app`,
+      utfordringKopiert: 'Sfida u kopjua në clipboard! Ngjit dhe dërgoja shokut.',
+      kortDel: '📤 Ndaj', kortLukk: 'Mbyll', kortKopiert: 'Teksti i kartës u kopjua!',
+      anmeldtAv: 'Vlerësuar nga',
+      ingenAnmeldelser: 'Akoma nuk ka vlerësime. Plotëso formularin lart!',
+      ingenAnmeldere: 'Akoma nuk ka vlerësues.', ingenByer: 'Akoma nuk ka qytete.', ingenData: 'Akoma nuk ka të dhëna.',
+      trenger2Restauranter: 'Nevojiten të paktën 2 restorante në listë.',
+      bingoNavnPrompt: 'Shkruani emrin për të parë tabelën tuaj bingo.',
+      bingoIngenAnmeldelser: 'Akoma nuk ka vlerësime të ngarkuara.',
+      bingoFullfort: (d, t) => `${d} nga ${t} të kryera`, bingoBingo: 'BINGO! 🎉',
+      dagbokNavnPrompt: 'Shkruani emrin tuaj.', dagbokIngenLastet: 'Nuk ka vlerësime të ngarkuara.',
+      dagbokIngen: (n) => `Nuk u gjet asnjë vlerësim për "${n}".`,
+      vilProveIngen: 'Nuk ka vende në listë akoma. Shto diçka!',
+      paaMinnelse: (d) => `🐟 Kanë kaluar mbi ${d} ditë nga vlerësimi i fundit! Koha për supë të re?`,
+      pwaIosSafari: '📲 Trokit ikonën Nda poshtë dhe zgjidh "Shto në ekranin kryesor".',
+      pwaAndroidReady: '📲 Instalo Fiskesuppa si aplikacion!',
+      pwaInAppIos: '📲 Hap lidhjen në Safari për të instaluar Fiskesuppa.',
+      pwaInAppAndroid: '📲 Hap lidhjen në Chrome për të instaluar Fiskesuppa.',
+      pwaInstallerKnapp: 'Instalo',
+      adminLoggetInn: 'Kyçur', adminLoggUt: 'Çkyçu', adminKnapp: 'Admin',
+      adminModalTittel: 'Kyçu si admin', adminAvbryt: 'Anulo', adminLoggInn: 'Kyçu',
+      adminEpostPassord: 'Ju lutemi shkruani email-in dhe fjalëkalimin.',
+      adminIkkeFunnet: 'Ky përdorues nuk është admin.',
+      adminFeilet: (m) => `Kyçja dështoi: ${m}`,
+    },
+    da: {
+      ranks: [
+        { min: 20, title: 'Neptuns udvalgte', emoji: '🔱' },
+        { min: 10, title: 'Suppedommeren',    emoji: '👨‍⚖️' },
+        { min: 5,  title: 'Søkaptajnen',      emoji: '⚓' },
+        { min: 3,  title: 'Fiskeren',         emoji: '🎣' },
+        { min: 1,  title: 'Fiskeelskeren',    emoji: '🐟' },
+      ],
+      achievements: {
+        pioner:   { name: 'Pioneren',        desc: 'Første til at anmelde en restaurant' },
+        gourmet:  { name: 'Gourmeten',       desc: 'Givet terningkast 5,5 eller højere' },
+        kresen:   { name: 'Den kræsne',      desc: 'Givet terningkast 3,0 eller lavere' },
+        eventyrer:{ name: 'Eventyrer',       desc: 'Anmeldt i 3 eller flere byer' },
+        paastrek: { name: 'På stribe',       desc: 'Anmeldt noget i de seneste 30 dage' },
+        ivrig:    { name: 'Ivrig anmelder',  desc: '5 eller flere anmeldelser' },
+        vendetta: { name: 'Vendetta',        desc: 'Givet meget lavere score end en ven på samme restaurant' },
+      },
+      bingoTasks: [
+        { emoji: '🐟', tekst: 'Første anmeldelse nogensinde' },
+        { emoji: '📍', tekst: 'Anmeldt i 2 byer' },
+        { emoji: '🏆', tekst: 'Givet terningkast 5,0+' },
+        { emoji: '😤', tekst: 'Givet terningkast under 3,0' },
+        { emoji: '🔄', tekst: 'Besøgt samme restaurant 2 gange' },
+        { emoji: '📸', tekst: 'Uploadet billede' },
+        { emoji: '💬', tekst: 'Skrevet kommentar' },
+        { emoji: '🗺️', tekst: 'Anmeldt i 3 forskellige byer' },
+        { emoji: '🌟', tekst: '5 anmeldelser i alt' },
+      ],
+      ukensUtfordringer: [
+        { emoji: '🦐', tekst: 'Find en fiskesuppe med REJER denne uge!' },
+        { emoji: '🌿', tekst: 'Denne uge: Giv karakter til en suppe med urter.' },
+        { emoji: '🥖', tekst: 'Udfordring: Tjek om brødet er frisk og smørret ordentligt!' },
+        { emoji: '🗺️', tekst: 'Prøv fiskesuppe i en by, du aldrig har besøgt.' },
+        { emoji: '🍷', tekst: 'Bonus-udfordring: Fiskesuppe med et glas hvidvin!' },
+        { emoji: '📸', tekst: 'Husk billedet — intet billede, ingen troværdighed!' },
+        { emoji: '🤝', tekst: 'Tag en ven med og sammenlign scorer — hvem er mest kræsen?' },
+        { emoji: '🥶', tekst: 'Test om suppen er varm nok — regel nr. 5!' },
+        { emoji: '🐟', tekst: 'Kan du finde en suppe med mindst 3 fiskearter?' },
+        { emoji: '⚔️', tekst: 'Udfordr en ven: Slå hinandens højeste score!' },
+        { emoji: '🏆', tekst: 'Jagt på en suppe over 5,0 i snit! Findes den?' },
+        { emoji: '🔍', tekst: 'Besøg en restaurant ingen har anmeldt endnu — vær pionér!' },
+      ],
+      alleKriterier: 'Er du fuldstændig blind?!\n\nDu skal bedømme ALLE 10 bud, inden du kan gemme, din fjols!',
+      glemtBilde: 'Glemte du et billede, din klovn?\n\nTryk OK for at gemme uden billede, eller Annuller for at tilføje.',
+      glemtKommentar: 'Nå, valgte du at AFSTÅ fra at kommentere? Konfliktsky som altid.\n\nTryk OK for at gemme uden kommentar, eller Annuller for at tilføje.',
+      duplikat: 'Måtte du tilbage som en junkie for mere? 🐟\n\nDu har allerede anmeldt denne restaurant. Tilføj en ny anmeldelse alligevel?',
+      perfektSuppe: (r, s) => `🏆 PERFEKT SUPPE! Du har fundet meningen med livet!\n\n${r} fik terningkast ${s}`,
+      darligSuppe:  (r, s) => `💀 Det var åbenlyst skrald. Håber du krævede pengene tilbage.\n\n${r} fik terningkast ${s}`,
+      lagretMsg:    (r, s) => `Gemt! ${r} fik terningkast ${s}`,
+      ikkeSuppeTittel: 'Nu var du smart. Nu var du MEGET smart!',
+      ikkeSuppeInfo:   'Troede du ikke, jeg ville opdage det? Upload et ordentligt fiskesuppebillede, din klovn.',
+      sjekkerBilde: '🔍 Tjekker om dette faktisk er en fiskesuppe…',
+      godkjenn: '✅ Godkend', taBildeOmIgjen: '📷 Tag nyt billede', fjernBilde: 'Fjern billede',
+      lagrerText: 'Gemmer…', lasterOppBildeText: 'Uploader billede…', lagrerAnmeldelseText: 'Gemmer anmeldelse…',
+      tilfeldigAlert: (r, c) => `🎲 Her burde du tage hen:\n\n${r} — ${c}\n\nIngen undskyldninger!`,
+      honResultat: (w, l) => `✅ Du foretrækker ${w} over ${l}!`,
+      slettBekreft: 'Er du sikker på, at du vil slette denne anmeldelse?',
+      slettKnapp: 'Slet', kortKnapp: '🎴 Kort', utfordreKnapp: '⚔️ Udfordr',
+      utfordringTekst: (r, c, s) => `Jeg udfordrer dig til at slå min score på ${r}, ${c} (${s} i terningkast) — klarer du det? 🐟\nhttps://fiskesuppeadvisor.vercel.app`,
+      utfordringKopiert: 'Udfordringen er kopieret til udklipsholderen! Indsæt og send til din ven.',
+      kortDel: '📤 Del', kortLukk: 'Luk', kortKopiert: 'Korttekst kopieret til udklipsholderen!',
+      anmeldtAv: 'Anmeldt af',
+      ingenAnmeldelser: 'Ingen fiskesuppeanmeldelser endnu. Udfyld formularen ovenfor!',
+      ingenAnmeldere: 'Ingen anmeldere endnu.', ingenByer: 'Ingen byer endnu.', ingenData: 'Ingen data endnu.',
+      trenger2Restauranter: 'Der skal mindst 2 restauranter til på listen.',
+      bingoNavnPrompt: 'Skriv dit navn for at se dit bingo-bræt.',
+      bingoIngenAnmeldelser: 'Ingen anmeldelser indlæst endnu.',
+      bingoFullfort: (d, t) => `${d} af ${t} fuldført`, bingoBingo: 'BINGO! 🎉',
+      dagbokNavnPrompt: 'Skriv dit navn.', dagbokIngenLastet: 'Ingen anmeldelser indlæst.',
+      dagbokIngen: (n) => `Ingen anmeldelser fundet for "${n}".`,
+      vilProveIngen: 'Ingen steder på listen endnu. Tilføj noget!',
+      paaMinnelse: (d) => `🐟 Det er over ${d} dage siden din sidste anmeldelse! Tid til at finde en ny suppe?`,
+      pwaIosSafari: '📲 Tryk på Del-ikonet nederst og vælg "Føj til hjemmeskærm".',
+      pwaAndroidReady: '📲 Installér Fiskesuppa som app!',
+      pwaInAppIos: '📲 Åbn linket i Safari for at installere Fiskesuppa.',
+      pwaInAppAndroid: '📲 Åbn linket i Chrome for at installere Fiskesuppa.',
+      pwaInstallerKnapp: 'Installér',
+      adminLoggetInn: 'Logget ind', adminLoggUt: 'Log ud', adminKnapp: 'Admin',
+      adminModalTittel: 'Log ind som admin', adminAvbryt: 'Annuller', adminLoggInn: 'Log ind',
+      adminEpostPassord: 'Indtast både email og adgangskode.',
+      adminIkkeFunnet: 'Denne bruger er ikke admin.',
+      adminFeilet: (m) => `Login mislykkedes: ${m}`,
+    },
+    de: {
+      ranks: [
+        { min: 20, title: 'Neptuns Auserwählter', emoji: '🔱' },
+        { min: 10, title: 'Der Suppenrichter',    emoji: '👨‍⚖️' },
+        { min: 5,  title: 'Der Seekapitän',       emoji: '⚓' },
+        { min: 3,  title: 'Der Fischer',          emoji: '🎣' },
+        { min: 1,  title: 'Fischliebhaber',       emoji: '🐟' },
+      ],
+      achievements: {
+        pioner:   { name: 'Der Pionier',       desc: 'Als Erster ein Restaurant bewertet' },
+        gourmet:  { name: 'Der Gourmet',       desc: 'Bewertung von 5,5 oder höher vergeben' },
+        kresen:   { name: 'Der Wählerische',   desc: 'Bewertung von 3,0 oder niedriger vergeben' },
+        eventyrer:{ name: 'Der Entdecker',     desc: 'In 3 oder mehr Städten bewertet' },
+        paastrek: { name: 'Am Ball',           desc: 'In den letzten 30 Tagen etwas bewertet' },
+        ivrig:    { name: 'Eifriger Bewerter', desc: '5 oder mehr Bewertungen' },
+        vendetta: { name: 'Vendetta',          desc: 'Viel niedrigere Bewertung als ein Freund im selben Restaurant' },
+      },
+      bingoTasks: [
+        { emoji: '🐟', tekst: 'Erste Bewertung überhaupt' },
+        { emoji: '📍', tekst: 'In 2 Städten bewertet' },
+        { emoji: '🏆', tekst: 'Bewertung 5,0+ vergeben' },
+        { emoji: '😤', tekst: 'Bewertung unter 3,0 vergeben' },
+        { emoji: '🔄', tekst: 'Dasselbe Restaurant 2 Mal besucht' },
+        { emoji: '📸', tekst: 'Foto hochgeladen' },
+        { emoji: '💬', tekst: 'Kommentar geschrieben' },
+        { emoji: '🗺️', tekst: 'In 3 verschiedenen Städten bewertet' },
+        { emoji: '🌟', tekst: 'Insgesamt 5 Bewertungen' },
+      ],
+      ukensUtfordringer: [
+        { emoji: '🦐', tekst: 'Finde diese Woche eine Fischsuppe mit GARNELEN!' },
+        { emoji: '🌿', tekst: 'Diese Woche: Bewerte eine Suppe mit Kräutern.' },
+        { emoji: '🥖', tekst: 'Challenge: Prüfe, ob das Brot frisch und die Butter ordentlich ist!' },
+        { emoji: '🗺️', tekst: 'Probiere Fischsuppe in einer Stadt, die du noch nie besucht hast.' },
+        { emoji: '🍷', tekst: 'Bonus-Challenge: Fischsuppe mit einem Glas Weißwein!' },
+        { emoji: '📸', tekst: 'Denk diese Woche an das Foto — kein Foto, kein Ansehen!' },
+        { emoji: '🤝', tekst: 'Bring einen Freund mit und vergleicht Bewertungen — wer ist wählerischer?' },
+        { emoji: '🥶', tekst: 'Teste, ob die Suppe wirklich heiß genug ist — Regel Nr. 5!' },
+        { emoji: '🐟', tekst: 'Kannst du eine Suppe mit mindestens 3 Fischsorten finden?' },
+        { emoji: '⚔️', tekst: 'Fordere einen Freund heraus: Überbietet gegenseitig eure Höchstwertung!' },
+        { emoji: '🏆', tekst: 'Jagd auf eine Suppe über 5,0 Durchschnitt! Gibt es sie?' },
+        { emoji: '🔍', tekst: 'Besuche ein Restaurant, das noch niemand bewertet hat — sei ein Pionier!' },
+      ],
+      alleKriterier: 'Bist du eigentlich blind?!\n\nDu musst ALLE 10 Gebote bewerten, bevor du speichern kannst, du Trottel!',
+      glemtBilde: 'Foto vergessen, oder? Typisch.\n\nOK drücken, um ohne Foto zu speichern, oder Abbrechen zum Hinzufügen.',
+      glemtKommentar: 'Also hast du dich entschieden, NICHTS zu kommentieren? Feige Entscheidung.\n\nOK drücken, um ohne Kommentar zu speichern, oder Abbrechen zum Hinzufügen.',
+      duplikat: 'Schon wieder zurück wie ein Süchtiger? 🐟\n\nDu hast dieses Restaurant bereits bewertet. Trotzdem eine neue Bewertung hinzufügen?',
+      perfektSuppe: (r, s) => `🏆 PERFEKTE SUPPE! Du hast den Sinn des Lebens gefunden!\n\n${r} hat ${s} Punkte`,
+      darligSuppe:  (r, s) => `💀 Das war offensichtlich Schrott. Hoffe, du hast dein Geld zurückgefordert.\n\n${r} hat ${s} Punkte`,
+      lagretMsg:    (r, s) => `Gespeichert! ${r} hat ${s} Punkte`,
+      ikkeSuppeTittel: 'Oh, sehr clever. Sehr CLEVER!',
+      ikkeSuppeInfo:   'Dachtest du, ich würde es nicht bemerken? Lad ein richtiges Fischsuppen-Foto hoch, du Clown.',
+      sjekkerBilde: '🔍 Überprüfe, ob das wirklich eine Fischsuppe ist…',
+      godkjenn: '✅ Bestätigen', taBildeOmIgjen: '📷 Neues Foto', fjernBilde: 'Foto entfernen',
+      lagrerText: 'Speichere…', lasterOppBildeText: 'Foto hochladen…', lagrerAnmeldelseText: 'Bewertung speichern…',
+      tilfeldigAlert: (r, c) => `🎲 Hier solltest du hingehen:\n\n${r} — ${c}\n\nKeine Ausreden!`,
+      honResultat: (w, l) => `✅ Du bevorzugst ${w} gegenüber ${l}!`,
+      slettBekreft: 'Bist du sicher, dass du diese Bewertung löschen möchtest?',
+      slettKnapp: 'Löschen', kortKnapp: '🎴 Karte', utfordreKnapp: '⚔️ Herausfordern',
+      utfordringTekst: (r, c, s) => `Ich fordere dich heraus, meinen Score bei ${r}, ${c} zu schlagen (${s} von 6) — traust du dir das zu? 🐟\nhttps://fiskesuppeadvisor.vercel.app`,
+      utfordringKopiert: 'Herausforderung in die Zwischenablage kopiert! Einfügen und an deinen Freund senden.',
+      kortDel: '📤 Teilen', kortLukk: 'Schließen', kortKopiert: 'Kartentext in die Zwischenablage kopiert!',
+      anmeldtAv: 'Bewertet von',
+      ingenAnmeldelser: 'Noch keine Fischsuppen-Bewertungen. Fülle das Formular oben aus!',
+      ingenAnmeldere: 'Noch keine Bewerter.', ingenByer: 'Noch keine Städte.', ingenData: 'Noch keine Daten.',
+      trenger2Restauranter: 'Mindestens 2 Restaurants in der Liste benötigt.',
+      bingoNavnPrompt: 'Namen eingeben, um dein Bingo-Brett zu sehen.',
+      bingoIngenAnmeldelser: 'Noch keine Bewertungen geladen.',
+      bingoFullfort: (d, t) => `${d} von ${t} abgeschlossen`, bingoBingo: 'BINGO! 🎉',
+      dagbokNavnPrompt: 'Deinen Namen eingeben.', dagbokIngenLastet: 'Keine Bewertungen geladen.',
+      dagbokIngen: (n) => `Keine Bewertungen für "${n}" gefunden.`,
+      vilProveIngen: 'Noch keine Orte auf der Liste. Füge etwas hinzu!',
+      paaMinnelse: (d) => `🐟 Es sind über ${d} Tage seit deiner letzten Bewertung vergangen! Zeit für eine neue Suppe?`,
+      pwaIosSafari: '📲 Tippe unten auf das Teilen-Symbol und wähle „Zum Home-Bildschirm".',
+      pwaAndroidReady: '📲 Fiskesuppa als App installieren!',
+      pwaInAppIos: '📲 Öffne den Link in Safari, um Fiskesuppa zu installieren.',
+      pwaInAppAndroid: '📲 Öffne den Link in Chrome, um Fiskesuppa zu installieren.',
+      pwaInstallerKnapp: 'Installieren',
+      adminLoggetInn: 'Angemeldet', adminLoggUt: 'Abmelden', adminKnapp: 'Admin',
+      adminModalTittel: 'Als Admin anmelden', adminAvbryt: 'Abbrechen', adminLoggInn: 'Anmelden',
+      adminEpostPassord: 'Bitte E-Mail und Passwort eingeben.',
+      adminIkkeFunnet: 'Dieser Benutzer ist kein Admin.',
+      adminFeilet: (m) => `Anmeldung fehlgeschlagen: ${m}`,
+    },
+    es: {
+      ranks: [
+        { min: 20, title: 'El elegido de Neptuno', emoji: '🔱' },
+        { min: 10, title: 'El juez de sopas',      emoji: '👨‍⚖️' },
+        { min: 5,  title: 'El capitán del mar',    emoji: '⚓' },
+        { min: 3,  title: 'El pescador',           emoji: '🎣' },
+        { min: 1,  title: 'Amante del pescado',    emoji: '🐟' },
+      ],
+      achievements: {
+        pioner:   { name: 'El pionero',         desc: 'El primero en reseñar un restaurante' },
+        gourmet:  { name: 'El gourmet',         desc: 'Ha dado una puntuación de 5,5 o más' },
+        kresen:   { name: 'El exigente',        desc: 'Ha dado una puntuación de 3,0 o menos' },
+        eventyrer:{ name: 'El explorador',      desc: 'Reseñado en 3 o más ciudades' },
+        paastrek: { name: 'En racha',           desc: 'Ha reseñado algo en los últimos 30 días' },
+        ivrig:    { name: 'Crítico entusiasta', desc: '5 o más reseñas' },
+        vendetta: { name: 'Vendetta',           desc: 'Ha dado una puntuación mucho menor que un amigo en el mismo restaurante' },
+      },
+      bingoTasks: [
+        { emoji: '🐟', tekst: 'Primera reseña jamás' },
+        { emoji: '📍', tekst: 'Reseñado en 2 ciudades' },
+        { emoji: '🏆', tekst: 'Puntuación de 5,0+' },
+        { emoji: '😤', tekst: 'Puntuación por debajo de 3,0' },
+        { emoji: '🔄', tekst: 'Visitado el mismo restaurante 2 veces' },
+        { emoji: '📸', tekst: 'Subido una foto' },
+        { emoji: '💬', tekst: 'Escrito un comentario' },
+        { emoji: '🗺️', tekst: 'Reseñado en 3 ciudades diferentes' },
+        { emoji: '🌟', tekst: '5 reseñas en total' },
+      ],
+      ukensUtfordringer: [
+        { emoji: '🦐', tekst: '¡Encuentra una sopa de pescado con GAMBAS esta semana!' },
+        { emoji: '🌿', tekst: 'Esta semana: Puntúa una sopa con hierbas.' },
+        { emoji: '🥖', tekst: '¡Desafío: Comprueba si el pan es fresco y la mantequilla de verdad!' },
+        { emoji: '🗺️', tekst: 'Prueba sopa de pescado en una ciudad que nunca hayas visitado.' },
+        { emoji: '🍷', tekst: '¡Desafío extra: Sopa de pescado con una copa de vino blanco!' },
+        { emoji: '📸', tekst: '¡Acuérdate de la foto — sin foto, sin credibilidad!' },
+        { emoji: '🤝', tekst: 'Lleva a un amigo y compara puntuaciones — ¿quién es más exigente?' },
+        { emoji: '🥶', tekst: 'Comprueba si la sopa está realmente caliente — ¡regla número 5!' },
+        { emoji: '🐟', tekst: '¿Puedes encontrar una sopa con al menos 3 tipos de pescado?' },
+        { emoji: '⚔️', tekst: '¡Desafía a un amigo: Supera la puntuación más alta del otro!' },
+        { emoji: '🏆', tekst: '¡Caza una sopa con promedio superior a 5,0! ¿Existe?' },
+        { emoji: '🔍', tekst: 'Visita un restaurante que nadie ha reseñado aún — ¡sé un pionero!' },
+      ],
+      alleKriterier: '¿Estás ciego o qué?!\n\n¡Tienes que valorar LOS 10 mandamientos antes de guardar, inútil!',
+      glemtBilde: '¿Olvidaste la foto, genio?\n\nPulsa OK para guardar sin foto, o Cancelar para añadir una.',
+      glemtKommentar: '¿Así que decidiste no comentar NADA? Vaya cobardía.\n\nPulsa OK para guardar sin comentario, o Cancelar para añadir uno.',
+      duplikat: '¿De vuelta como un adicto pidiendo más? 🐟\n\nYa has reseñado este restaurante. ¿Añadir otra reseña de todas formas?',
+      perfektSuppe: (r, s) => `🏆 ¡SOPA PERFECTA! ¡Has encontrado el sentido de la vida!\n\n${r} obtuvo ${s}`,
+      darligSuppe:  (r, s) => `💀 Eso era claramente una basura. Espero que pidieras el reembolso.\n\n${r} obtuvo ${s}`,
+      lagretMsg:    (r, s) => `¡Guardado! ${r} obtuvo ${s}`,
+      ikkeSuppeTittel: 'Oh, muy listo. ¡Muy LISTO!',
+      ikkeSuppeInfo:   '¿Pensabas que no me iba a dar cuenta? Sube una foto de sopa de pescado de verdad, payaso.',
+      sjekkerBilde: '🔍 Comprobando si esto es realmente una sopa de pescado…',
+      godkjenn: '✅ Confirmar', taBildeOmIgjen: '📷 Repetir foto', fjernBilde: 'Quitar foto',
+      lagrerText: 'Guardando…', lasterOppBildeText: 'Subiendo foto…', lagrerAnmeldelseText: 'Guardando reseña…',
+      tilfeldigAlert: (r, c) => `🎲 Deberías ir aquí:\n\n${r} — ${c}\n\n¡Sin excusas!`,
+      honResultat: (w, l) => `✅ ¡Prefieres ${w} sobre ${l}!`,
+      slettBekreft: '¿Seguro que quieres eliminar esta reseña?',
+      slettKnapp: 'Eliminar', kortKnapp: '🎴 Tarjeta', utfordreKnapp: '⚔️ Desafiar',
+      utfordringTekst: (r, c, s) => `Te desafío a superar mi puntuación en ${r}, ${c} (${s} de 6) — ¿crees que puedes? 🐟\nhttps://fiskesuppeadvisor.vercel.app`,
+      utfordringKopiert: '¡Desafío copiado al portapapeles! Pégalo y envíaselo a tu amigo.',
+      kortDel: '📤 Compartir', kortLukk: 'Cerrar', kortKopiert: '¡Texto de tarjeta copiado al portapapeles!',
+      anmeldtAv: 'Reseñado por',
+      ingenAnmeldelser: 'Aún no hay reseñas. ¡Rellena el formulario de arriba!',
+      ingenAnmeldere: 'Aún no hay reseñadores.', ingenByer: 'Aún no hay ciudades.', ingenData: 'Aún no hay datos.',
+      trenger2Restauranter: 'Se necesitan al menos 2 restaurantes en la lista.',
+      bingoNavnPrompt: 'Introduce tu nombre para ver tu tablero de bingo.',
+      bingoIngenAnmeldelser: 'Aún no hay reseñas cargadas.',
+      bingoFullfort: (d, t) => `${d} de ${t} completado`, bingoBingo: '¡BINGO! 🎉',
+      dagbokNavnPrompt: 'Introduce tu nombre.', dagbokIngenLastet: 'No hay reseñas cargadas.',
+      dagbokIngen: (n) => `No se encontraron reseñas para "${n}".`,
+      vilProveIngen: 'No hay lugares en la lista aún. ¡Añade algo!',
+      paaMinnelse: (d) => `🐟 ¡Han pasado más de ${d} días desde tu última reseña! ¿Hora de encontrar una sopa nueva?`,
+      pwaIosSafari: '📲 Toca el icono Compartir abajo y selecciona "Añadir a pantalla de inicio".',
+      pwaAndroidReady: '📲 ¡Instala Fiskesuppa como app!',
+      pwaInAppIos: '📲 Abre el enlace en Safari para instalar Fiskesuppa.',
+      pwaInAppAndroid: '📲 Abre el enlace en Chrome para instalar Fiskesuppa.',
+      pwaInstallerKnapp: 'Instalar',
+      adminLoggetInn: 'Conectado', adminLoggUt: 'Cerrar sesión', adminKnapp: 'Admin',
+      adminModalTittel: 'Iniciar sesión como admin', adminAvbryt: 'Cancelar', adminLoggInn: 'Iniciar sesión',
+      adminEpostPassord: 'Por favor introduce email y contraseña.',
+      adminIkkeFunnet: 'Este usuario no es admin.',
+      adminFeilet: (m) => `Error al iniciar sesión: ${m}`,
+    },
+  };
+  Object.keys(EXTRA_TRANSLATIONS).forEach(lang => {
+    if (TRANSLATIONS[lang]) Object.assign(TRANSLATIONS[lang], EXTRA_TRANSLATIONS[lang]);
+  });
+  // Korte tilleggsnøkler
+  const TITLE_TRANSLATIONS = {
+    no: { ukensUtfordringTittel: 'Ukens utfordring' },
+    en: { ukensUtfordringTittel: 'Weekly Challenge' },
+    hr: { ukensUtfordringTittel: 'Tjedni izazov' },
+    sq: { ukensUtfordringTittel: 'Sfida e javës' },
+    da: { ukensUtfordringTittel: 'Ugens udfordring' },
+    de: { ukensUtfordringTittel: 'Wöchentliche Challenge' },
+    es: { ukensUtfordringTittel: 'Desafío de la semana' },
+  };
+  Object.keys(TITLE_TRANSLATIONS).forEach(lang => {
+    if (TRANSLATIONS[lang]) Object.assign(TRANSLATIONS[lang], TITLE_TRANSLATIONS[lang]);
+  });
+  T = TRANSLATIONS.no; // oppdater T etter merge
+
+  function rebuildCriteria() {
+    const el = document.getElementById('criteria');
+    if (!el) return;
+    const kriterier = (T.kriterier && T.kriterier.length) ? T.kriterier : KRITERIER_NO;
+    el.innerHTML = '';
+    kriterier.forEach((name, idx) => {
+      const row = document.createElement('div');
+      row.className = 'criterion';
+      row.innerHTML = `
+        <div class="criterion-name">${idx + 1}. ${name}</div>
+        <div class="rating-buttons" data-idx="${idx}">
+          <span class="scale-end">${T.darlig || 'Dårlig'}</span>
+          ${[1,2,3,4,5,6].map(n => `<button type="button" data-value="${n}">${n}</button>`).join('')}
+          <span class="scale-end">${T.perfekt || 'Perfekt'}</span>
+        </div>
+      `;
+      el.appendChild(row);
+    });
+    el.querySelectorAll('.rating-buttons').forEach(group => {
+      group.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') return;
+        const idx = group.dataset.idx;
+        currentRatings[idx] = parseInt(e.target.dataset.value);
+        group.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+        e.target.classList.add('selected');
+        updateLiveScore();
+      });
+    });
+    Object.entries(currentRatings).forEach(([idx, val]) => {
+      const group = el.querySelector(`.rating-buttons[data-idx="${idx}"]`);
+      if (group) {
+        const btn = group.querySelector(`button[data-value="${val}"]`);
+        if (btn) btn.classList.add('selected');
+      }
+    });
+  }
+
+  function applyTranslations(lang) {
+    T = TRANSLATIONS[lang] || TRANSLATIONS.no;
+    currentLang = lang;
+
+    const hjemBtn = document.querySelector('header > button');
+    if (hjemBtn) hjemBtn.textContent = T.hjem;
+
+    const sections = document.querySelectorAll('main section');
+
+    // Seksjon 0: skjema
+    if (sections[0]) {
+      sections[0].querySelector('h2').textContent = T.nyAnmeldelse;
+      const lts = sections[0].querySelectorAll('.label-text');
+      if (lts[0]) lts[0].textContent = T.restaurant;
+      if (lts[1]) lts[1].textContent = T.sted;
+      if (lts[2]) lts[2].textContent = T.dato;
+      if (lts[3]) lts[3].textContent = T.dittNavn;
+      const ri = document.getElementById('restaurant-input');
+      if (ri) ri.placeholder = T.restaurantPlaceholder;
+      const ci = sections[0].querySelector('input[name="city"]');
+      if (ci) ci.placeholder = T.stedPlaceholder;
+      const ni = sections[0].querySelector('input[name="reviewer_name"]');
+      if (ni) ni.placeholder = T.navnPlaceholder;
+      const imgLbl = sections[0].querySelector('.image-upload-label');
+      if (imgLbl) imgLbl.textContent = T.bildeLabel;
+      const st = sections[0].querySelector('.scale-title');
+      if (st) st.textContent = T.deTiBud;
+      const si = sections[0].querySelector('.scale-info');
+      if (si) si.childNodes.forEach(n => {
+        if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) n.textContent = '\n' + T.skalaInfo + '\n';
+      });
+      const ls = sections[0].querySelector('.live-score');
+      if (ls) ls.childNodes.forEach(n => {
+        if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) n.textContent = T.terningkastHeader + ' ';
+      });
+      if (lts[4]) {
+        lts[4].childNodes.forEach(n => {
+          if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) n.textContent = T.kommentar + ' ';
+        });
+        const opt = lts[4].querySelector('.optional');
+        if (opt) opt.textContent = T.valgfritt;
+      }
+      const ta = sections[0].querySelector('textarea');
+      if (ta) ta.placeholder = T.kommentarPlaceholder;
+      const sb = document.getElementById('submit-btn');
+      if (sb) sb.textContent = T.lagreAnmeldelse;
+      const rb = document.getElementById('reset-btn');
+      if (rb) rb.textContent = T.nullstill;
+    }
+
+    // Seksjon 1: anmeldelsesliste
+    if (sections[1]) {
+      sections[1].querySelector('h2').textContent = T.alleAnmeldelser;
+      const ranBtn = sections[1].querySelector('.random-btn');
+      if (ranBtn) ranBtn.textContent = T.tilfeldigBtn;
+      const fr = document.getElementById('filter-restaurant');
+      if (fr) fr.placeholder = T.sokRestaurant;
+      const fc = document.getElementById('filter-city');
+      if (fc && fc.options[0]) fc.options[0].text = T.alleByer;
+      const frev = document.getElementById('filter-reviewer');
+      if (frev && frev.options[0]) frev.options[0].text = T.alleAnmeldere;
+      const fsc = document.getElementById('filter-minscore');
+      if (fsc && fsc.options[0]) fsc.options[0].text = T.alleScorer;
+    }
+
+    if (sections[2]) sections[2].querySelector('h2').textContent = T.anmeldere;
+    if (sections[3]) sections[3].querySelector('h2').textContent = T.byLigaen;
+
+    if (sections[4]) {
+      sections[4].querySelector('h2').textContent = T.hotOrNot;
+      const d = sections[4].querySelector('p');
+      if (d) d.textContent = T.hotOrNotDesc;
+    }
+    if (sections[5]) {
+      sections[5].querySelector('h2').textContent = T.suppeBingo;
+      const d = sections[5].querySelector('p');
+      if (d) d.textContent = T.suppeBingoDesc;
+      const bb = sections[5].querySelector('.helper-btn');
+      if (bb) bb.textContent = T.visBingo;
+      const bn = document.getElementById('bingo-name');
+      if (bn) bn.placeholder = T.navnInput;
+    }
+    if (sections[6]) {
+      sections[6].querySelector('h2').textContent = T.fiskedagbok;
+      const d = sections[6].querySelector('p');
+      if (d) d.textContent = T.fiskedagbokDesc;
+      const db = sections[6].querySelector('.helper-btn');
+      if (db) db.textContent = T.visDagbok;
+      const dn = document.getElementById('dagbok-name');
+      if (dn) dn.placeholder = T.navnInput;
+    }
+    if (sections[7]) {
+      sections[7].querySelector('h2').textContent = T.vilProveListe;
+      const d = sections[7].querySelector('p');
+      if (d) d.textContent = T.vilProveDesc;
+      const vp = document.getElementById('vp-input');
+      if (vp) vp.placeholder = T.vilProvePlaceholder;
+      const vpb = sections[7].querySelector('.vp-add button');
+      if (vpb) vpb.textContent = T.leggTil;
+    }
+
+    rebuildCriteria();
+
+    // Re-render dynamisk innhold fra cache
+    if (allReviewsCache.length) {
+      renderLeaderboard(allReviewsCache);
+      renderReviewers(allReviewsCache);
+      renderByLiga(allReviewsCache);
+      renderSotW(allReviewsCache);
+      renderUkensUtfordring();
+      initHotOrNot();
+    }
+  }
+
+  // ============================================================
   // SPRÅKVALG OG SPLASH-SKJERM
   // ============================================================
   function velgSprak(sprak) {
+    applyTranslations(sprak);
     const splash = document.getElementById('splash-screen');
     splash.style.opacity = '0';
     setTimeout(() => { splash.style.display = 'none'; }, 500);
@@ -1860,11 +2881,8 @@
   window.velgSprak = velgSprak;
   window.tilbakeTilStart = tilbakeTilStart;
 
-  // Hopp over splash hvis språk allerede er valgt
-  if (localStorage.getItem('fsa_sprak')) {
-    const splash = document.getElementById('splash-screen');
-    if (splash) splash.style.display = 'none';
-  }
+  // Alltid vis språkvelger ved oppstart
+  localStorage.removeItem('fsa_sprak');
 
   checkAuth();
   renderReviews();
@@ -1914,17 +2932,17 @@
       `;
 
       const msgs = {
-        'inapp-ios':     '📲 Åpne lenken i <strong>Safari</strong> for å installere Fiskesuppa som app.',
-        'inapp-android': '📲 Åpne lenken i <strong>Chrome</strong> for å installere Fiskesuppa som app.',
-        'ios-safari':    '📲 Trykk på <strong>Del-ikonet</strong> nederst og velg <strong>«Legg til på hjemskjerm»</strong>.',
-        'android-ready': '📲 Installer <strong>Fiskesuppa</strong> som app!',
+        'inapp-ios':     T.pwaInAppIos     || '📲 Åpne lenken i <strong>Safari</strong> for å installere Fiskesuppa som app.',
+        'inapp-android': T.pwaInAppAndroid || '📲 Åpne lenken i <strong>Chrome</strong> for å installere Fiskesuppa som app.',
+        'ios-safari':    T.pwaIosSafari    || '📲 Trykk på <strong>Del-ikonet</strong> nederst og velg <strong>«Legg til på hjemskjerm»</strong>.',
+        'android-ready': T.pwaAndroidReady || '📲 Installer <strong>Fiskesuppa</strong> som app!',
       };
 
       banner.innerHTML = `
         <span style="font-size:0.87rem;color:white;line-height:1.45;flex:1;">${msgs[type]}</span>
         <div style="display:flex;gap:8px;flex-shrink:0;">
           ${type === 'android-ready'
-            ? '<button id="pwa-install-btn" style="background:#4ade80;color:#041a4a;border:none;padding:9px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:0.85rem;">Installer</button>'
+            ? `<button id="pwa-install-btn" style="background:#4ade80;color:#041a4a;border:none;padding:9px 14px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:0.85rem;">${T.pwaInstallerKnapp||'Installer'}</button>`
             : ''}
           <button id="pwa-dismiss-btn" style="background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.25);padding:8px 11px;border-radius:8px;cursor:pointer;font-size:0.9rem;">✕</button>
         </div>
@@ -2030,11 +3048,12 @@
     const el = document.getElementById('ukens-box');
     if (!el) return;
     const weekNum = Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 7));
-    const uu = UKENS_UTFORDRINGER[weekNum % UKENS_UTFORDRINGER.length];
+    const utfordringer = (T.ukensUtfordringer && T.ukensUtfordringer.length) ? T.ukensUtfordringer : UKENS_UTFORDRINGER;
+    const uu = utfordringer[weekNum % utfordringer.length];
     el.innerHTML = `
       <div class="ue-emoji">${uu.emoji}</div>
       <div>
-        <div class="ue-title">Ukens utfordring</div>
+        <div class="ue-title">${T.ukensUtfordringTittel||'Ukens utfordring'}</div>
         <div class="ue-text">${uu.tekst}</div>
       </div>
     `;
@@ -2055,7 +3074,7 @@
       <div class="sotw-box">
         <div class="sotw-trophy">🏆</div>
         <div class="sotw-info">
-          <div class="sotw-label">Ukens beste suppe</div>
+          <div class="sotw-label">${T.ukensBesteSuppe || 'Ukens beste suppe'}</div>
           <div class="sotw-name">${escapeHtml(best.restaurant)}</div>
           <div class="sotw-meta">${escapeHtml(best.city)} · ${escapeHtml(best.reviewer_name||'Anonym')} · ${formatDate(best.date)}</div>
         </div>
@@ -2070,7 +3089,7 @@
   function renderByLiga(reviews) {
     const el = document.getElementById('city-list');
     if (!el) return;
-    if (!reviews.length) { el.innerHTML = '<p class="empty">Ingen data enda.</p>'; return; }
+    if (!reviews.length) { el.innerHTML = `<p class="empty">${T.ingenData||'Ingen data enda.'}</p>`; return; }
 
     const cities = {};
     reviews.forEach(r => {
@@ -2091,7 +3110,7 @@
         <div class="city-pos ${posClass[i]||''}">${posEmoji[i] || (i+1)}</div>
         <div class="city-info">
           <div class="city-nm">${escapeHtml(c.name)}</div>
-          <div class="city-sub">${c.count} anmeldelse${c.count===1?'':'r'}</div>
+          <div class="city-sub">${c.count === 1 ? (T.anmeldelse1 || '1 anmeldelse') : (T.anmeldelseN ? T.anmeldelseN(c.count) : `${c.count} anmeldelser`)}</div>
         </div>
         <div class="city-avg">${c.avg.toFixed(1).replace('.',',')}</div>
       </div>
@@ -2119,7 +3138,7 @@
     });
 
     if (honGroups.length < 2) {
-      document.getElementById('hon-container').innerHTML = '<p class="empty">Trenger minst 2 restauranter i lista.</p>';
+      document.getElementById('hon-container').innerHTML = `<p class="empty">${T.trenger2Restauranter||'Trenger minst 2 restauranter i lista.'}</p>`;
       return;
     }
     honIdx1 = 0; honIdx2 = 1; honVoted = false;
@@ -2158,7 +3177,7 @@
     document.getElementById(side===0?'hon-a':'hon-b').classList.add('winner');
     document.getElementById(side===0?'hon-b':'hon-a').classList.add('loser');
     document.getElementById('hon-result').textContent =
-      `✅ Du foretrekker ${winner.restaurant} over ${loser.restaurant}!`;
+      T.honResultat ? T.honResultat(winner.restaurant, loser.restaurant) : `✅ Du foretrekker ${winner.restaurant} over ${loser.restaurant}!`;
   }
   window.honVote = honVote;
 
@@ -2199,16 +3218,20 @@
     const gridEl   = document.getElementById('bingo-grid');
     const statusEl = document.getElementById('bingo-status');
     if (!gridEl) return;
-    if (!name) { if (statusEl) statusEl.textContent = 'Skriv inn navn for å se bingo-brettet ditt.'; gridEl.innerHTML = ''; return; }
-    if (!allReviewsCache.length) { if (statusEl) statusEl.textContent = 'Ingen anmeldelser lastet enda.'; return; }
+    if (!name) { if (statusEl) statusEl.textContent = T.bingoNavnPrompt||'Skriv inn navn for å se bingo-brettet ditt.'; gridEl.innerHTML = ''; return; }
+    if (!allReviewsCache.length) { if (statusEl) statusEl.textContent = T.bingoIngenAnmeldelser||'Ingen anmeldelser lastet enda.'; return; }
     const mine = allReviewsCache.filter(r => (r.reviewer_name||'').trim().toLowerCase() === name.toLowerCase());
     const done = BINGO_TASKS.filter(t => t.check(mine, allReviewsCache)).length;
-    if (statusEl) statusEl.textContent = `${done} av ${BINGO_TASKS.length} fullført${done === BINGO_TASKS.length ? ' — BINGO! 🎉' : ''}`;
-    gridEl.innerHTML = BINGO_TASKS.map(t => {
+    const bingoStr = done === BINGO_TASKS.length ? ` — ${T.bingoBingo||'BINGO! 🎉'}` : '';
+    if (statusEl) statusEl.textContent = T.bingoFullfort ? T.bingoFullfort(done, BINGO_TASKS.length) + bingoStr : `${done} av ${BINGO_TASKS.length} fullført${bingoStr}`;
+    // Bruk oversatte bingo-oppgaver for tekst-visning, men behold check-logikken fra BINGO_TASKS
+    const bingoDisplay = (T.bingoTasks && T.bingoTasks.length === BINGO_TASKS.length) ? T.bingoTasks : BINGO_TASKS;
+    gridEl.innerHTML = BINGO_TASKS.map((t, i) => {
       const isDone = t.check(mine, allReviewsCache);
+      const display = bingoDisplay[i] || t;
       return `<div class="bingo-cell${isDone?' done':''}">
-        <div class="bc-e">${isDone ? '✅' : t.emoji}</div>
-        <div>${t.tekst}</div>
+        <div class="bc-e">${isDone ? '✅' : display.emoji}</div>
+        <div>${display.tekst}</div>
       </div>`;
     }).join('');
     if (done === BINGO_TASKS.length) showConfetti();
@@ -2223,12 +3246,12 @@
     const name = (nameInput ? nameInput.value : '').trim();
     const el = document.getElementById('dagbok-list');
     if (!el) return;
-    if (!name) { el.innerHTML = '<p class="empty">Skriv inn navnet ditt.</p>'; return; }
-    if (!allReviewsCache.length) { el.innerHTML = '<p class="empty">Ingen anmeldelser lastet.</p>'; return; }
+    if (!name) { el.innerHTML = `<p class="empty">${T.dagbokNavnPrompt||'Skriv inn navnet ditt.'}</p>`; return; }
+    if (!allReviewsCache.length) { el.innerHTML = `<p class="empty">${T.dagbokIngenLastet||'Ingen anmeldelser lastet.'}</p>`; return; }
     const mine = allReviewsCache
       .filter(r => (r.reviewer_name||'').trim().toLowerCase() === name.toLowerCase())
       .sort((a,b) => new Date(a.date) - new Date(b.date));
-    if (!mine.length) { el.innerHTML = `<p class="empty">Ingen anmeldelser funnet for "${escapeHtml(name)}".</p>`; return; }
+    if (!mine.length) { el.innerHTML = `<p class="empty">${T.dagbokIngen ? T.dagbokIngen(escapeHtml(name)) : `Ingen anmeldelser funnet for "${escapeHtml(name)}".`}</p>`; return; }
     el.innerHTML = mine.map(r => `
       <div class="dagbok-line">
         <div class="dagbok-card">
@@ -2278,7 +3301,7 @@
     const el = document.getElementById('vp-list');
     if (!el) return;
     const list = loadVilProve();
-    if (!list.length) { el.innerHTML = '<div class="vp-empty">Ingen steder i lista enda. Legg til noe!</div>'; return; }
+    if (!list.length) { el.innerHTML = `<div class="vp-empty">${T.vilProveIngen||'Ingen steder i lista enda. Legg til noe!'}</div>`; return; }
     el.innerHTML = list.map((item, i) => `
       <div class="vp-item${item.done?' done':''}">
         <input type="checkbox" ${item.done?'checked':''} onchange="toggleVilProve(${i})">
@@ -2333,12 +3356,12 @@
       <div class="sk-num">${Number(r.average).toFixed(1).replace('.',',')}</div>
       <div class="sk-lbl">Terningkast</div>
       ${barsHtml ? `<div class="sk-bars">${barsHtml}</div>` : ''}
-      <div class="sk-reviewer">Anmeldt av ${escapeHtml(r.reviewer_name||'Anonym')}</div>
+      <div class="sk-reviewer">${T.anmeldtAv||'Anmeldt av'} ${escapeHtml(r.reviewer_name||'Anonym')}</div>
       <div class="sk-date">${formatDate(r.date)}</div>
       <div class="sk-url">fiskesuppeadvisor.vercel.app</div>
       <div class="sk-actions">
-        <button class="sk-share" onclick="delSuppeKort('${r.id}')">📤 Del</button>
-        <button class="sk-close" onclick="document.getElementById('sk-modal').classList.remove('open')">Lukk</button>
+        <button class="sk-share" onclick="delSuppeKort('${r.id}')">${T.kortDel||'📤 Del'}</button>
+        <button class="sk-close" onclick="document.getElementById('sk-modal').classList.remove('open')">${T.kortLukk||'Lukk'}</button>
       </div>
     `;
     modal.classList.add('open');
@@ -2354,7 +3377,7 @@
       navigator.share({ text: tekst }).catch(()=>{});
     } else {
       navigator.clipboard.writeText(tekst)
-        .then(()=>alert('Kort-tekst kopiert til utklippstavlen!'))
+        .then(()=>alert(T.kortKopiert||'Kort-tekst kopiert til utklippstavlen!'))
         .catch(()=>alert(tekst));
     }
   }
@@ -2385,7 +3408,7 @@
         `;
         reminder.innerHTML = `
           <span style="font-size:0.87rem;color:white;line-height:1.45;flex:1;">
-            🐟 Det er over ${Math.floor(daysSince)} dager siden siste anmeldelse! På tide å finne en ny suppe?
+            ${T.paaMinnelse ? T.paaMinnelse(Math.floor(daysSince)) : `🐟 Det er over ${Math.floor(daysSince)} dager siden siste anmeldelse! På tide å finne en ny suppe?`}
           </span>
           <button style="background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.25);padding:8px 11px;border-radius:8px;cursor:pointer;font-size:0.9rem;flex-shrink:0;">✕</button>
         `;
