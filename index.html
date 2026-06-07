@@ -634,7 +634,28 @@
 
   /* ---------- Filter-bar ---------- */
   .filter-bar {
-    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .filter-bar input[type="search"] {
+    grid-column: 1 / -1;
+  }
+  #filter-count, #filter-reset-btn {
+    grid-column: 1 / -1;
+  }
+  @media (min-width: 500px) {
+    .filter-bar {
+      display: flex; flex-wrap: wrap;
+    }
+    .filter-bar input[type="search"] {
+      grid-column: unset;
+      flex: 1 1 100%;
+    }
+    #filter-count, #filter-reset-btn {
+      grid-column: unset;
+    }
   }
   .filter-bar input[type="search"],
   .filter-bar select {
@@ -1596,7 +1617,7 @@
             </div>
             <div style="text-align:right;">
               <div class="reviewer-card-count">${stats.count}</div>
-              <div class="reviewer-card-count-label">anmeldelser</div>
+              <div class="reviewer-card-count-label">${T.anmeldelseN ? T.anmeldelseN(2).replace(/^\d+\s*/, '') : 'anmeldelser'}</div>
             </div>
           </div>
           ${achievementsHtml}
@@ -3047,6 +3068,11 @@
 
     renderLeaderboard(filtered);
     updateFilterUI(city, reviewer, q, minScore);
+    const countEl = document.getElementById('filter-count');
+    if (countEl) {
+      const hasFilter = city || reviewer || q || minScore > 0;
+      countEl.textContent = hasFilter ? `${filtered.length} treff` : '';
+    }
   }
   window.applyFilters = applyFilters;
 
