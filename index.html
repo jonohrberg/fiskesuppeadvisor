@@ -1107,6 +1107,39 @@
     "Passe store fiskebiter (ingen kniv nødvendig)"
   ];
 
+  // ============================================================
+  // CUSTOM MODAL (erstatter alert / confirm)
+  // ============================================================
+  function appModal(msg, buttons) {
+    return new Promise(resolve => {
+      const modal = document.getElementById('app-modal');
+      const msgEl = document.getElementById('app-modal-msg');
+      const btnsEl = document.getElementById('app-modal-btns');
+      if (!modal) { resolve(buttons[0].value); return; }
+      msgEl.textContent = msg;
+      btnsEl.innerHTML = '';
+      buttons.forEach(btn => {
+        const el = document.createElement('button');
+        el.textContent = btn.label;
+        el.style.cssText = `padding:10px 18px; border-radius:10px; border:1px solid rgba(255,255,255,0.25); cursor:pointer; font-size:0.95rem; font-weight:600; color:#fff; background:${btn.primary ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)'};`;
+        el.onclick = () => { modal.style.display = 'none'; resolve(btn.value); };
+        btnsEl.appendChild(el);
+      });
+      modal.style.display = 'flex';
+    });
+  }
+  async function appAlert(msg) {
+    await appModal(msg, [{ label: 'OK', value: true, primary: true }]);
+  }
+  async function appConfirm(msg, okLabel = 'OK', cancelLabel = 'Avbryt') {
+    return await appModal(msg, [
+      { label: cancelLabel, value: false, primary: false },
+      { label: okLabel, value: true, primary: true },
+    ]);
+  }
+  window.appAlert = appAlert;
+  window.appConfirm = appConfirm;
+
   let currentRatings = {};
   let currentImageBlob = null;
   let currentImageUrl = null; // for forhåndsvisning
@@ -1628,11 +1661,11 @@
 
   function tilfeldigSuppe() {
     const kort = document.querySelectorAll('.restaurant-name');
-    if (kort.length === 0) { alert(T.ingenAnmeldelser||'Ingen supper i lista enda!'); return; }
+    if (kort.length === 0) { appAlert(T.ingenAnmeldelser||'Ingen supper i lista enda!'); return; }
     const valgt = kort[Math.floor(Math.random() * kort.length)];
     const by = valgt.closest('.restaurant-header').querySelector('.restaurant-meta').textContent;
     const msg = T.tilfeldigAlert ? T.tilfeldigAlert(valgt.textContent, by) : `🎲 Her burde du dra:\n\n${valgt.textContent} — ${by}\n\nNu e det ingen unnskyldninga!`;
-    alert(msg);
+    appAlert(msg);
   }
   window.tilfeldigSuppe = tilfeldigSuppe;
 
@@ -1644,8 +1677,8 @@
       try { await navigator.share({ text: tekst }); return; } catch(e) {}
     }
     navigator.clipboard.writeText(tekst).then(() =>
-      alert(T.utfordringKopiert||'Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.')
-    ).catch(() => alert(tekst));
+      appAlert(T.utfordringKopiert||'Utfordringen er kopiert til utklippstavlen! Lim inn og send til kompisen din.')
+    ).catch(() => appAlert(tekst));
   }
   window.utfordring = utfordring;
 
@@ -1676,10 +1709,10 @@
   }
 
   async function deleteReview(id) {
-    if (!db) { alert('Server ikke tilgjengelig'); return; }
-    if (!confirm(T.slettBekreft||'Sikker på at du vil slette denne anmeldelsen?')) return;
+    if (!db) { await appAlert('Server ikke tilgjengelig'); return; }
+    if (!await appConfirm(T.slettBekreft||'Sikker på at du vil slette denne anmeldelsen?', T.slettKnapp||'Slett')) return;
     const { error } = await db.from('reviews').delete().eq('id', id);
-    if (error) { alert('Klarte ikke å slette: ' + error.message); return; }
+    if (error) { await appAlert('Klarte ikke å slette: ' + error.message); return; }
     renderReviews();
   }
   window.deleteReview = deleteReview;
@@ -1691,25 +1724,25 @@
     e.preventDefault();
 
     if (!db) {
-      alert('Kan ikke lagre nå – serveren er ikke tilgjengelig. Se feilmelding øverst på sida.');
+      await appAlert('Kan ikke lagre nå – serveren er ikke tilgjengelig. Se feilmelding øverst på sida.');
       return;
     }
 
     if (Object.keys(currentRatings).length < KRITERIER.length) {
-      alert(T.alleKriterier||'E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!');
+      await appAlert(T.alleKriterier||'E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!');
       return;
     }
 
     // Påminnelse om bilde mangler (valgfritt, men spør)
     if (!currentImageBlob) {
-      const fortsett = confirm(T.glemtBilde||'Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.');
+      const fortsett = await appConfirm(T.glemtBilde||'Har du glæmt bilde din kuk? E du dement?\n\nTrykk OK for å lagre uten bilde, eller Avbryt for å legge til bilde.');
       if (!fortsett) return;
     }
 
     // Påminnelse om kommentar mangler (valgfritt, men spør)
     const kommentarVerdi = (document.querySelector('textarea[name="comment"]').value || '').trim();
     if (!kommentarVerdi) {
-      const fortsett2 = confirm(T.glemtKommentar||'Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.');
+      const fortsett2 = await appConfirm(T.glemtKommentar||'Åja, så du vellje å AVSTÅ fra å kommentere? Så saaatans konfliktsky du e din lille kuk\n\nTrykk OK for å lagre uten kommentar, eller Avbryt for å legge til kommentar.');
       if (!fortsett2) return;
     }
 
@@ -1743,7 +1776,7 @@
         .ilike('reviewer_name', normalizeName(formData.get('reviewer_name')))
         .limit(1);
       if (existing && existing.length > 0) {
-        const junkie = confirm(T.duplikat||'Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?');
+        const junkie = await appConfirm(T.duplikat||'Jaha? Måtte du tilbake som en junkie for mer? 🐟\n\nDu har allerede anmeldt denne restauranten. Vil du legge til en ny anmeldelse likevel?');
         if (!junkie) { submitBtn.disabled = false; submitBtn.textContent = 'Lagre anmeldelse'; return; }
       }
 
@@ -1775,15 +1808,15 @@
       const avgStr = average.toFixed(1).replace('.', ',');
       if (average >= 6.0) {
         showConfetti();
-        setTimeout(() => alert(T.perfektSuppe ? T.perfektSuppe(resto, avgStr) : `🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n${resto} fikk terningkast ${avgStr}`), 400);
+        setTimeout(() => appAlert(T.perfektSuppe ? T.perfektSuppe(resto, avgStr) : `🏆 PERFEKT SUPPE! Du har funne meningen med livet!\n\n${resto} fikk terningkast ${avgStr}`), 400);
       } else if (average < 2.0) {
-        alert(T.darligSuppe ? T.darligSuppe(resto, avgStr) : `💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n${resto} fikk terningkast ${avgStr}`);
+        await appAlert(T.darligSuppe ? T.darligSuppe(resto, avgStr) : `💀 Dette var åpenbart søppel. Håper du krevde pengene tilbake din stakkars siel\n\n${resto} fikk terningkast ${avgStr}`);
       } else {
         showFishParticles();
-        alert(T.lagretMsg ? T.lagretMsg(resto, avgStr) : `Lagret! ${resto} fikk terningkast ${avgStr}`);
+        await appAlert(T.lagretMsg ? T.lagretMsg(resto, avgStr) : `Lagret! ${resto} fikk terningkast ${avgStr}`);
       }
     } catch (err) {
-      alert('Noe gikk galt: ' + err.message);
+      await appAlert('Noe gikk galt: ' + err.message);
       console.error(err);
     } finally {
       submitBtn.disabled = false;
@@ -1819,7 +1852,7 @@
   }
 
   adminToggle.addEventListener('click', async () => {
-    if (!db) { alert('Server ikke tilgjengelig'); return; }
+    if (!db) { await appAlert('Server ikke tilgjengelig'); return; }
     if (isAdmin) {
       await db.auth.signOut();
       isAdmin = false;
@@ -3486,8 +3519,8 @@
       navigator.share({ text: tekst }).catch(()=>{});
     } else {
       navigator.clipboard.writeText(tekst)
-        .then(()=>alert(T.kortKopiert||'Kort-tekst kopiert til utklippstavlen!'))
-        .catch(()=>alert(tekst));
+        .then(()=>appAlert(T.kortKopiert||'Kort-tekst kopiert til utklippstavlen!'))
+        .catch(()=>appAlert(tekst));
     }
   }
   window.delSuppeKort = delSuppeKort;
@@ -3527,6 +3560,14 @@
     }
   })();
 </script>
+
+<!-- ===== Custom Modal ===== -->
+<div id="app-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#0d3a7a; border:1px solid rgba(255,255,255,0.2); border-radius:16px; max-width:360px; width:100%; padding:24px 20px; box-shadow:0 8px 40px rgba(0,0,0,0.5);">
+    <p id="app-modal-msg" style="color:#fff; font-size:1rem; line-height:1.5; white-space:pre-wrap; margin:0 0 20px;"></p>
+    <div id="app-modal-btns" style="display:flex; gap:10px; justify-content:flex-end;"></div>
+  </div>
+</div>
 
 </body>
 </html>            
