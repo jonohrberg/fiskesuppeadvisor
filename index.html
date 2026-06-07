@@ -1159,6 +1159,7 @@
   let currentImageUrl = null; // for forhåndsvisning
   let isAdmin = false;
   let allReviewsCache = [];
+  let myName = (localStorage.getItem('fiska_myname') || '').trim().toLowerCase();
   let honGroups = [];
   let honIdx1 = 0, honIdx2 = 1, honVoted = false;
 
@@ -1566,7 +1567,7 @@
             <div class="ind-meta">${formatDate(r.date)}</div>
             ${r.comment ? `<div class="ind-comment">${escapeHtml(r.comment)}</div>` : ''}
             ${r.image_url ? `<img class="review-thumb" style="margin-top:6px;width:70px;height:70px;border-radius:8px;object-fit:cover;cursor:pointer;" src="${r.image_url}" alt="" onclick="openLightbox('${r.image_url}')">` : ''}
-            ${isAdmin ? `<button class="delete-btn" style="margin-top:6px;display:block;" onclick="deleteReview('${r.id}')">${T.slettKnapp||'Slett'}</button>` : ''}
+            ${(isAdmin || (myName && (r.reviewer_name||'').trim().toLowerCase() === myName)) ? `<button class="delete-btn" style="margin-top:6px;display:block;" onclick="deleteReview('${r.id}')">${T.slettKnapp||'Slett'}</button>` : ''}
             <button class="challenge-btn" style="margin-top:6px;" onclick="visSuppeKort('${r.id}')">${T.kortKnapp||'🎴 Kort'}</button>
           </div>
           <div>
@@ -1807,6 +1808,10 @@
         comment: commentValue || null
       }]);
       if (error) throw error;
+
+      // Lagre navn for sletting av egne anmeldelser
+      const savedName = normalizeName(formData.get('reviewer_name')).trim().toLowerCase();
+      if (savedName) { localStorage.setItem('fiska_myname', savedName); myName = savedName; }
 
       // Nullstill skjemaet
       e.target.reset();
@@ -2979,6 +2984,12 @@
   checkAuth();
   renderReviews();
   renderVilProve();
+
+  // Prefill navn fra forrige gang
+  if (myName) {
+    const nameInput = document.querySelector('input[name="reviewer_name"]');
+    if (nameInput) nameInput.value = myName.charAt(0).toUpperCase() + myName.slice(1);
+  }
 
   // Registrer service worker for PWA-installasjon
   if ('serviceWorker' in navigator) {
