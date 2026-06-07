@@ -80,7 +80,7 @@
   /* ---------- Generelt utseende ---------- */
   * { box-sizing: border-box; }
   html {
-    background: #050f2e;
+    background: #073080;
     min-height: 100%;
   }
   body {
@@ -99,12 +99,10 @@
     inset: 0;
     background:
       linear-gradient(180deg,
-        #020c24 0%,
-        #041a4a 20%,
-        #073080 45%,
-        #0a4db5 68%,
-        #0e6fd4 85%,
-        #1a8fe0 100%
+        #041a4a 0%,
+        #073080 30%,
+        #0a4db5 65%,
+        #0e6fd4 100%
       );
     z-index: -2;
     pointer-events: none;
@@ -416,9 +414,9 @@
   }
   .toggle-btn:hover { border-color: rgba(255,255,255,0.5); color: white; }
   .restaurant-score-block { text-align: right; }
-  .restaurant-score { font-size: 2.2rem; font-weight: bold; color: #4ade80; }
+  .restaurant-score { font-size: 2.2rem; font-weight: bold; color: #fbbf24; }
   .restaurant-score-label {
-    font-size: 0.7rem; opacity: 0.55;
+    font-size: 0.7rem; opacity: 0.7; color: #fbbf24;
     text-transform: uppercase; letter-spacing: 0.05em;
   }
   .individual-reviews { display: none; border-top: 1px solid rgba(255,255,255,0.08); }
@@ -676,6 +674,14 @@
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 10px; padding: 11px 14px;
     margin-bottom: 8px; gap: 12px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .city-row:hover {
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.18);
+  }
+  .city-row:active {
+    background: rgba(255,255,255,0.15);
   }
   .city-pos { font-size: 1.1rem; font-weight: bold; min-width: 28px; opacity: 0.35; }
   .city-pos.p1 { opacity: 1; color: gold; }
@@ -826,7 +832,7 @@
 
 <div id="splash-screen" style="
   position:fixed;inset:0;z-index:9999;
-  background:linear-gradient(180deg,#020c24 0%,#041a4a 30%,#073080 60%,#0a4db5 100%);
+  background:linear-gradient(180deg,#041a4a 0%,#073080 30%,#0a4db5 65%,#0e6fd4 100%);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:32px;text-align:center;
   transition:opacity 0.5s ease;
@@ -856,7 +862,7 @@
     <button class="admin-link" id="admin-toggle">Admin</button>
   </div>
   <h1>🐟 Jons fiskesuppeadvisor <span class="emoji-pair">👴✌️</span></h1>
-  <p>Alt iht. den bibelske skalaen: "thou shalt NOT"</p>
+  <p id="app-subtitle">Alt iht. den bibelske skalaen: "thou shalt NOT"</p>
 </header>
 
 <main>
@@ -901,8 +907,8 @@
       </div>
 
       <div class="scale-info">
-        <div class="scale-title">De 10 bud</div>
-        Gi karakter 1–6 på hvert bud · <strong>1 = elendig</strong>, <strong>6 = perfekt</strong>
+        <div class="scale-title" id="scale-title-text">De 10 bud</div>
+        <span id="scale-info-text">Gi karakter 1–6 på hvert bud · 1 = elendig, 6 = perfekt</span>
       </div>
 
       <div class="criteria" id="criteria"></div>
@@ -1487,7 +1493,7 @@
           </div>
           <div>
             <div class="ind-score">${Number(r.average).toFixed(1).replace('.', ',')}</div>
-            <div class="ind-score-label">Terningkast</div>
+            <div class="ind-score-label">${T.terningkastLabel || 'Score'}</div>
           </div>
         </div>
       `;
@@ -1510,8 +1516,8 @@
               </span>
             </div>
             <div class="restaurant-score-block">
-              <div class="restaurant-score">${accAvg.toFixed(1).replace('.', ',')}</div>
-              <div class="restaurant-score-label">${count > 1 ? `${T.snittAv || 'Snitt av'} ${count}` : (T.terningkastLabel || 'Terningkast')}</div>
+              <div class="restaurant-score">⌀ ${accAvg.toFixed(1).replace('.', ',')}</div>
+              <div class="restaurant-score-label">${count > 1 ? `${T.snittAv || 'Snitt av'} ${count}` : (T.terningkastLabel || 'Snitt')}</div>
             </div>
           </div>
           <div class="individual-reviews${isAdmin ? ' open' : ''}" id="ind-reviews-${gi}">
@@ -1860,6 +1866,7 @@
       restaurantPlaceholder: 'F.eks. Fiskeriet', sted: 'Sted', stedPlaceholder: 'F.eks. Oslo',
       dato: 'Dato', dittNavn: 'Ditt navn', navnPlaceholder: 'F.eks. Jon',
       bildeLabel: '📷 Klikk her for å legge til bilde av suppa (valgfritt)',
+      subtittel: 'Alt iht. den bibelske skalaen: "thou shalt NOT"',
       deTiBud: 'De 10 bud', skalaInfo: 'Gi karakter 1–6 på hvert bud · 1 = elendig, 6 = perfekt',
       darlig: 'Dårlig', perfekt: 'Perfekt', terningkastHeader: 'Terningkast:',
       kommentar: 'Kommentar', valgfritt: '(valgfritt)',
@@ -1886,6 +1893,7 @@
       restaurantPlaceholder: 'E.g. The Fishery', sted: 'Location', stedPlaceholder: 'E.g. London',
       dato: 'Date', dittNavn: 'Your name', navnPlaceholder: 'E.g. Jon',
       bildeLabel: '📷 Click here to add a photo of the soup (optional)',
+      subtittel: 'By the biblical scale: "thou shalt NOT"',
       deTiBud: 'The 10 Commandments', skalaInfo: 'Rate 1–6 on each commandment · 1 = terrible, 6 = perfect',
       darlig: 'Terrible', perfekt: 'Perfect', terningkastHeader: 'Score:',
       kommentar: 'Comment', valgfritt: '(optional)',
@@ -1923,6 +1931,7 @@
       restaurantPlaceholder: 'Npr. Ribarska kuća', sted: 'Mjesto', stedPlaceholder: 'Npr. Split',
       dato: 'Datum', dittNavn: 'Vaše ime', navnPlaceholder: 'Npr. Jon',
       bildeLabel: '📷 Kliknite ovdje za dodavanje fotografije juhe (neobavezno)',
+      subtittel: 'Prema biblijskoj ljestvici: "thou shalt NOT"',
       deTiBud: '10 zapovijedi', skalaInfo: 'Ocjenite 1–6 za svaku zapovijed · 1 = užasno, 6 = savršeno',
       darlig: 'Užasno', perfekt: 'Savršeno', terningkastHeader: 'Ocjena:',
       kommentar: 'Komentar', valgfritt: '(neobavezno)',
@@ -1960,6 +1969,7 @@
       restaurantPlaceholder: 'P.sh. Gjeli i Detit', sted: 'Qyteti', stedPlaceholder: 'P.sh. Tiranë',
       dato: 'Data', dittNavn: 'Emri juaj', navnPlaceholder: 'P.sh. Jon',
       bildeLabel: '📷 Klikoni këtu për të shtuar një foto të supës (opsionale)',
+      subtittel: 'Sipas shkallës biblike: "thou shalt NOT"',
       deTiBud: '10 Urdhërimet', skalaInfo: 'Vlerësoni 1–6 për secilën urdhërim · 1 = i tmerrshëm, 6 = i përsosur',
       darlig: 'I tmerrshëm', perfekt: 'I përsosur', terningkastHeader: 'Vlerësim:',
       kommentar: 'Koment', valgfritt: '(opsionale)',
@@ -1996,6 +2006,7 @@
       hjem: '← Hjem', nyAnmeldelse: 'Ny anmeldelse', restaurant: 'Restaurant',
       restaurantPlaceholder: 'F.eks. Fisketorvet', sted: 'Sted', stedPlaceholder: 'F.eks. København',
       dato: 'Dato', dittNavn: 'Dit navn', navnPlaceholder: 'F.eks. Jon',
+      subtittel: 'Alt iht. den bibelske skala: "thou shalt NOT"',
       bildeLabel: '📷 Klik her for at tilføje billede af suppen (valgfrit)',
       deTiBud: 'De 10 bud', skalaInfo: 'Giv karakter 1–6 på hvert bud · 1 = elendig, 6 = perfekt',
       darlig: 'Dårlig', perfekt: 'Perfekt', terningkastHeader: 'Terningkast:',
@@ -2033,6 +2044,7 @@
       hjem: '← Startseite', nyAnmeldelse: 'Neue Bewertung', restaurant: 'Restaurant',
       restaurantPlaceholder: 'z.B. Fischerei', sted: 'Ort', stedPlaceholder: 'z.B. Hamburg',
       dato: 'Datum', dittNavn: 'Dein Name', navnPlaceholder: 'z.B. Jon',
+      subtittel: 'Nach der biblischen Skala: "thou shalt NOT"',
       bildeLabel: '📷 Klicken zum Hinzufügen eines Fotos der Suppe (optional)',
       deTiBud: 'Die 10 Gebote', skalaInfo: 'Bewerte 1–6 für jedes Gebot · 1 = miserabel, 6 = perfekt',
       darlig: 'Miserabel', perfekt: 'Perfekt', terningkastHeader: 'Bewertung:',
@@ -2070,6 +2082,7 @@
       hjem: '← Inicio', nyAnmeldelse: 'Nueva reseña', restaurant: 'Restaurante',
       restaurantPlaceholder: 'P.ej. La Pescadería', sted: 'Ciudad', stedPlaceholder: 'P.ej. Barcelona',
       dato: 'Fecha', dittNavn: 'Tu nombre', navnPlaceholder: 'P.ej. Jon',
+      subtittel: 'Según la escala bíblica: "thou shalt NOT"',
       bildeLabel: '📷 Haz clic aquí para añadir una foto de la sopa (opcional)',
       deTiBud: 'Los 10 mandamientos', skalaInfo: 'Puntúa 1–6 en cada mandamiento · 1 = horrible, 6 = perfecto',
       darlig: 'Horrible', perfekt: 'Perfecto', terningkastHeader: 'Puntuación:',
@@ -2774,12 +2787,12 @@
       if (ni) ni.placeholder = T.navnPlaceholder;
       const imgLbl = sections[0].querySelector('.image-upload-label');
       if (imgLbl) imgLbl.textContent = T.bildeLabel;
-      const st = sections[0].querySelector('.scale-title');
+      const st = document.getElementById('scale-title-text');
       if (st) st.textContent = T.deTiBud;
-      const si = sections[0].querySelector('.scale-info');
-      if (si) si.childNodes.forEach(n => {
-        if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) n.textContent = '\n' + T.skalaInfo + '\n';
-      });
+      const sit = document.getElementById('scale-info-text');
+      if (sit) sit.textContent = T.skalaInfo;
+      const subtittel = document.getElementById('app-subtitle');
+      if (subtittel) subtittel.textContent = T.subtittel || 'Alt iht. den bibelske skalaen: "thou shalt NOT"';
       const ls = sections[0].querySelector('.live-score');
       if (ls) ls.childNodes.forEach(n => {
         if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) n.textContent = T.terningkastHeader + ' ';
@@ -3026,6 +3039,19 @@
   }
   window.applyFilters = applyFilters;
 
+  function filterByCity(cityName) {
+    const cityEl = document.getElementById('filter-city');
+    if (cityEl) {
+      cityEl.value = cityName.toLowerCase();
+    }
+    applyFilters();
+    const leaderboard = document.getElementById('leaderboard') || document.querySelector('.leaderboard-section') || document.querySelector('section');
+    // Scroll to the top review section / filter bar
+    const filterBar = document.querySelector('.filter-bar');
+    if (filterBar) filterBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  window.filterByCity = filterByCity;
+
   // ============================================================
   // UKENS UTFORDRING
   // ============================================================
@@ -3106,7 +3132,7 @@
     const posClass = ['p1','p2','p3'];
     const posEmoji = ['🥇','🥈','🥉'];
     el.innerHTML = sorted.map((c,i) => `
-      <div class="city-row">
+      <div class="city-row" style="cursor:pointer;" onclick="filterByCity(${JSON.stringify(c.name)})">
         <div class="city-pos ${posClass[i]||''}">${posEmoji[i] || (i+1)}</div>
         <div class="city-info">
           <div class="city-nm">${escapeHtml(c.name)}</div>
