@@ -1742,7 +1742,8 @@
       return;
     }
 
-    if (Object.keys(currentRatings).length < KRITERIER.length) {
+    const kriterierLen = (T.kriterier && T.kriterier.length) ? T.kriterier.length : KRITERIER_NO.length;
+    if (Object.keys(currentRatings).length < kriterierLen) {
       await appAlert(T.alleKriterier||'E du ei fette satans blind måsunge med psykologiska problema?\n\nDu må gi karakter på alle 10 bud før du kan lagre!');
       return;
     }
