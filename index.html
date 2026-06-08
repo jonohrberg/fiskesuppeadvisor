@@ -1595,8 +1595,8 @@
               </span>
             </div>
             <div class="restaurant-score-block">
-              <div class="restaurant-score">⌀ ${accAvg.toFixed(1).replace('.', ',')}</div>
-              <div class="restaurant-score-label">${count > 1 ? `${T.snittAv || 'Snitt av'} ${count}` : (T.terningkastLabel || 'Snitt')}</div>
+              <div class="restaurant-score">⭐ ${accAvg.toFixed(1).replace('.', ',')}</div>
+              <div class="restaurant-score-label">${count > 1 ? `${T.snittkarakter || 'Snittkarakter'} av ${count}` : (T.snittkarakter || 'Snittkarakter')}</div>
             </div>
           </div>
           <div class="individual-reviews${isAdmin ? ' open' : ''}" id="ind-reviews-${gi}">
@@ -1965,7 +1965,7 @@
       fiskedagbokDesc: 'Dine suppe-minner i kronologisk rekkefølge.', visDagbok: 'Vis dagbok',
       vilProveListe: '📋 Vil prøve-liste', vilProveDesc: 'Restauranter du vil besøke.',
       vilProvePlaceholder: 'Restaurant + by…', leggTil: '+ Legg til',
-      vis: 'Vis', skjul: 'Skjul', terningkastLabel: 'Terningkast', snittAv: 'Snitt av',
+      vis: 'Vis', skjul: 'Skjul', terningkastLabel: 'Terningkast', snittAv: 'Snitt av', snittkarakter: 'Snittkarakter',
       holderRekorden: 'holder rekorden', suppemesterManed: 'Suppemester denne måneden!',
       ukensBesteSuppe: 'Ukens beste suppe',
       anmeldelse1: '1 anmeldelse', anmeldelseN: (n) => `${n} anmeldelser`,
@@ -1992,7 +1992,7 @@
       fiskedagbokDesc: 'Your soup memories in chronological order.', visDagbok: 'Show diary',
       vilProveListe: '📋 Want to try list', vilProveDesc: 'Restaurants you want to visit.',
       vilProvePlaceholder: 'Restaurant + city…', leggTil: '+ Add',
-      vis: 'Show', skjul: 'Hide', terningkastLabel: 'Score', snittAv: 'Avg of',
+      vis: 'Show', skjul: 'Hide', terningkastLabel: 'Score', snittAv: 'Avg of', snittkarakter: 'Average score',
       holderRekorden: 'holds the record', suppemesterManed: 'Soup Master this month!',
       ukensBesteSuppe: 'Soup of the week',
       anmeldelse1: '1 review', anmeldelseN: (n) => `${n} reviews`,
@@ -2030,7 +2030,7 @@
       fiskedagbokDesc: 'Vaša sjećanja na juhe u kronološkom redu.', visDagbok: 'Prikaži dnevnik',
       vilProveListe: '📋 Lista za probati', vilProveDesc: 'Restorani koje želite posjetiti.',
       vilProvePlaceholder: 'Restoran + grad…', leggTil: '+ Dodaj',
-      vis: 'Prikaži', skjul: 'Sakrij', terningkastLabel: 'Ocjena', snittAv: 'Prosjek od',
+      vis: 'Prikaži', skjul: 'Sakrij', terningkastLabel: 'Ocjena', snittAv: 'Prosjek od', snittkarakter: 'Prosječna ocjena',
       holderRekorden: 'drži rekord', suppemesterManed: 'Majstor juhe ovog mjeseca!',
       ukensBesteSuppe: 'Juha tjedna',
       anmeldelse1: '1 recenzija', anmeldelseN: (n) => `${n} recenzij${n === 1 ? 'a' : 'a'}`,
@@ -2068,7 +2068,7 @@
       fiskedagbokDesc: 'Kujtimet tuaja të supës në rend kronologjik.', visDagbok: 'Shfaq ditarin',
       vilProveListe: '📋 Lista për të provuar', vilProveDesc: 'Restorantet që dëshironi të vizitoni.',
       vilProvePlaceholder: 'Restorant + qytet…', leggTil: '+ Shto',
-      vis: 'Shfaq', skjul: 'Fshih', terningkastLabel: 'Pikë', snittAv: 'Mesatare e',
+      vis: 'Shfaq', skjul: 'Fshih', terningkastLabel: 'Pikë', snittAv: 'Mesatare e', snittkarakter: 'Pikë mesatare',
       holderRekorden: 'mban rekordin', suppemesterManed: 'Mjeshtar i supës këtë muaj!',
       ukensBesteSuppe: 'Supa e javës',
       anmeldelse1: '1 vlerësim', anmeldelseN: (n) => `${n} vlerësime`,
@@ -2106,7 +2106,7 @@
       fiskedagbokDesc: 'Dine suppe-minder i kronologisk rækkefølge.', visDagbok: 'Vis dagbog',
       vilProveListe: '📋 Vil prøve-liste', vilProveDesc: 'Restauranter du vil besøge.',
       vilProvePlaceholder: 'Restaurant + by…', leggTil: '+ Tilføj',
-      vis: 'Vis', skjul: 'Skjul', terningkastLabel: 'Terningkast', snittAv: 'Snit af',
+      vis: 'Vis', skjul: 'Skjul', terningkastLabel: 'Terningkast', snittAv: 'Snit af', snittkarakter: 'Gennemsnitskarakter',
       holderRekorden: 'holder rekorden', suppemesterManed: 'Suppekonge denne måned!',
       ukensBesteSuppe: 'Ugens bedste suppe',
       anmeldelse1: '1 anmeldelse', anmeldelseN: (n) => `${n} anmeldelser`,
@@ -2144,7 +2144,7 @@
       fiskedagbokDesc: 'Deine Suppen-Erinnerungen in chronologischer Reihenfolge.', visDagbok: 'Tagebuch anzeigen',
       vilProveListe: '📋 Möchte ich ausprobieren', vilProveDesc: 'Restaurants, die du besuchen möchtest.',
       vilProvePlaceholder: 'Restaurant + Stadt…', leggTil: '+ Hinzufügen',
-      vis: 'Anzeigen', skjul: 'Verbergen', terningkastLabel: 'Bewertung', snittAv: 'Ø von',
+      vis: 'Anzeigen', skjul: 'Verbergen', terningkastLabel: 'Bewertung', snittAv: '⭐ von', snittkarakter: 'Durchschnittsbewertung',
       holderRekorden: 'hält den Rekord', suppemesterManed: 'Suppenmeister diesen Monat!',
       ukensBesteSuppe: 'Suppe der Woche',
       anmeldelse1: '1 Bewertung', anmeldelseN: (n) => `${n} Bewertungen`,
@@ -2182,7 +2182,7 @@
       fiskedagbokDesc: 'Tus recuerdos de sopas en orden cronológico.', visDagbok: 'Mostrar diario',
       vilProveListe: '📋 Lista de pendientes', vilProveDesc: 'Restaurantes que quieres visitar.',
       vilProvePlaceholder: 'Restaurante + ciudad…', leggTil: '+ Añadir',
-      vis: 'Mostrar', skjul: 'Ocultar', terningkastLabel: 'Puntuación', snittAv: 'Prom. de',
+      vis: 'Mostrar', skjul: 'Ocultar', terningkastLabel: 'Puntuación', snittAv: 'Prom. de', snittkarakter: 'Puntuación media',
       holderRekorden: 'tiene el récord', suppemesterManed: '¡Maestro de la sopa este mes!',
       ukensBesteSuppe: 'Sopa de la semana',
       anmeldelse1: '1 reseña', anmeldelseN: (n) => `${n} reseñas`,
