@@ -1,0 +1,16 @@
+name: Hold Supabase-prosjektet aktivt
+
+on:
+  schedule:
+    - cron: "0 6 */3 * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Spør databasen (teller som aktivitet)
+        run: |
+          curl -sS "https://qazvbvcjjfyihpnydmsf.supabase.co/rest/v1/reviews?select=id&limit=1" \
+            -H "apikey: sb_publishable_1-Fj9IZiKXrWHGqjxaT_Dg_FV1DifAA" \
+            -H "Authorization: Bearer sb_publishable_1-Fj9IZiKXrWHGqjxaT_Dg_FV1DifAA"
