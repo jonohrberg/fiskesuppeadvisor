@@ -2,15 +2,18 @@ name: Hold Supabase-prosjektet aktivt
 
 on:
   schedule:
-    - cron: "0 6 */3 * *"
+    - cron: "0 6 * * *"
   workflow_dispatch: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Spør databasen (teller som aktivitet)
+      - name: Skriv hjerteslag til databasen (teller som ekte aktivitet)
         run: |
-          curl -sS "https://qazvbvcjjfyihpnydmsf.supabase.co/rest/v1/reviews?select=id&limit=1" \
+          curl -sS -X POST "https://qazvbvcjjfyihpnydmsf.supabase.co/rest/v1/heartbeat" \
             -H "apikey: sb_publishable_1-Fj9IZiKXrWHGqjxaT_Dg_FV1DifAA" \
-            -H "Authorization: Bearer sb_publishable_1-Fj9IZiKXrWHGqjxaT_Dg_FV1DifAA"
+            -H "Authorization: Bearer sb_publishable_1-Fj9IZiKXrWHGqjxaT_Dg_FV1DifAA" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "{\"id\":1,\"pinged_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
